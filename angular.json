@@ -23,6 +23,8 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "index": "src/index.html",
+            "baseHref": "./index.html",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
@@ -36,6 +38,11 @@
           },
           "configurations": {
             "production": {
+              "optimization": {
+                "styles": {
+                  "inlineCritical": false
+                }
+              },
               "budgets": [
                 {
                   "type": "initial",
