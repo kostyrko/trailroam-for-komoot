@@ -107,4 +107,36 @@ describe('TrailroamDatabase', () => {
     await expect(repositories.settings.get()).resolves.toEqual(settings);
     await expect(repositories.accessState.get()).resolves.toEqual(accessState);
   });
+
+  it('should create default OpenFreeMap settings without requiring a provider key', async () => {
+    const repositories = createRepositories(db);
+    const now = new Date('2026-05-26T10:00:00.000Z');
+
+    const settings = await repositories.settings.getOrCreateDefault(now);
+
+    expect(settings).toEqual({
+      id: DEFAULT_RECORD_ID,
+      mapProvider: 'openfreemap',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+    expect('apiKey' in settings).toBe(false);
+    await expect(repositories.settings.get()).resolves.toEqual(settings);
+  });
+
+  it('should keep existing settings after reopening the database', async () => {
+    const databaseName = db.name;
+    const repositories = createRepositories(db);
+    const settings = await repositories.settings.getOrCreateDefault(
+      new Date('2026-05-26T10:00:00.000Z'),
+    );
+
+    db.close();
+    db = new TrailroamDatabase(databaseName);
+    await db.open();
+
+    await expect(
+      createRepositories(db).settings.getOrCreateDefault(new Date('2026-05-26T11:00:00.000Z')),
+    ).resolves.toEqual(settings);
+  });
 });
