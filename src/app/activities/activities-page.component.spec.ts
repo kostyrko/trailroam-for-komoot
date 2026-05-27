@@ -203,4 +203,38 @@ describe('ActivitiesPageComponent', () => {
     expect(badge?.textContent).toContain('No route');
     expect(badge?.classList).not.toContain('route-ok');
   });
+
+  it('should include hover preview popover with quick stats', async () => {
+    TestBed.configureTestingModule({
+      imports: [ActivitiesPageComponent],
+      providers: [
+        {
+          provide: TRAILROAM_REPOSITORIES,
+          useValue: createMockRepositories([createActivity({
+            name: 'Sunset Trail Run',
+            activityCategory: 'run',
+            distanceMeters: 12000,
+            movingTimeSeconds: 5400,
+            routeSyncStatus: 'route_synced',
+          })], 1),
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ActivitiesPageComponent);
+    fixture.detectChanges();
+    await flushMicrotasks();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const popover = compiled.querySelector('.preview-popover');
+
+    expect(popover).toBeTruthy();
+    expect(popover?.textContent).toContain('Sunset Trail Run');
+    expect(popover?.textContent).toContain('run');
+    expect(popover?.textContent).toContain('12.0 km');
+    expect(popover?.textContent).toContain('Moving time');
+    expect(popover?.textContent).toContain('Route');
+    expect(popover?.getAttribute('role')).toBe('tooltip');
+  });
 });

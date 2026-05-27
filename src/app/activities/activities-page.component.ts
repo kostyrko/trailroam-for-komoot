@@ -82,7 +82,18 @@ function routeStatusLabel(status: string): string {
               @for (activity of items; track activity.id) {
                 <tr class="activity-row">
                   <td class="cell-date">{{ formatDate(activity.startDate) }}</td>
-                  <td class="cell-name">{{ activity.name }}</td>
+                  <td class="cell-name">
+                    <span class="preview-trigger"
+                      >{{ activity.name }}
+                      <span class="preview-popover" role="tooltip">
+                        <span class="preview-line">{{ formatDate(activity.startDate) }}</span>
+                        <span class="preview-line"><strong>{{ activity.name }}</strong></span>
+                        <span class="preview-line">{{ activity.activityCategory }} · {{ formatDistance(activity.distanceMeters) }}</span>
+                        <span class="preview-line">Moving time: {{ formatDuration(activity.movingTimeSeconds) }}</span>
+                        <span class="preview-line">Route: {{ routeStatusLabel(activity.routeSyncStatus) }}</span>
+                      </span>
+                    </span>
+                  </td>
                   <td><span class="category-tag">{{ activity.activityCategory }}</span></td>
                   <td class="cell-num">{{ formatDistance(activity.distanceMeters) }}</td>
                   <td class="cell-num">{{ formatDuration(activity.movingTimeSeconds) }}</td>
@@ -226,6 +237,42 @@ function routeStatusLabel(status: string): string {
     .page-info {
       color: #4f6f5d;
       font-size: 0.8125rem;
+    }
+
+    .preview-trigger {
+      cursor: default;
+      position: relative;
+    }
+
+    .preview-popover {
+      background: #14211b;
+      border-radius: 8px;
+      bottom: calc(100% + 8px);
+      box-shadow: 0 4px 12px rgb(20 33 27 / 25%);
+      color: #ffffff;
+      display: none;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      left: 50%;
+      line-height: 1.5;
+      min-width: 200px;
+      padding: 10px 14px;
+      position: absolute;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .preview-trigger:hover .preview-popover {
+      display: block;
+    }
+
+    .preview-line {
+      display: block;
+    }
+
+    .preview-line strong {
+      color: #ffffff;
     }
   `],
 })
