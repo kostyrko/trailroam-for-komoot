@@ -116,4 +116,61 @@ describe('RouteSyncService', () => {
     expect(result.routeSyncStatus).toBe('route_failed');
     expect(updateRouteSyncStatus).toHaveBeenCalledWith('strava:100', false, 'route_failed');
   });
+
+  describe('syncRoutesBatch', () => {
+    it('should batch process multiple routes and return aggregate counts', async () => {
+      const items = [
+        { activityId: 'strava:1', providerActivityId: '1', fetchResult: { success: true, latlng: [[19.94, 50.06], [19.95, 50.07]] } as RouteFetchResult },
+        { activityId: 'strava:2', providerActivityId: '2', fetchResult: { success: false, errorCode: 'NO_GPS_ROUTE' } as RouteFetchResult },
+        { activityId: 'strava:3', providerActivityId: '3', fetchResult: { success: true, latlng: [[19.96, 50.08], [19.97, 50.09]] } as RouteFetchResult },
+      ];
+
+      const result = await service.syncRoutesBatch(items);
+
+      expect(result.synced).toBe(2);
+      expect(result.noRoute).toBe(1);
+      expect(result.total).toBe(3);
+    });
+
+    it('should count skipped items and skip their processing', async () => {
+      const items = [
+        { activityId: 'strava:1', providerActivityId: '1', fetchResult: { success: true, latlng: [[19.94, 50.06]] } as RouteFetchResult },
+        { activityId: 'strava:2', providerActivityId: '2', fetchResult: { success: true, latlng: [[19.95, 50.07]] } as RouteFetchResult, skipReason: 'already_synced' },
+        { activityId: 'strava:3', providerActivityId: '3', fetchResult: { success: true, latlng: [[19.96, 50.08], [19.97, 50.09]] } as RouteFetchResult },
+      ];
+
+      const result = await service.syncRoutesBatch(items);
+
+      expect(result.skipped).toBe(1);
+      expect(result.synced).toBe(1);
+      expect(result.invalidCoordinates).toBe(1);
+      expect(result.total).toBe(3);
+    });
+
+    it('should continue processing remaining items when one fails', async () => {
+      activityRoutesUpsert
+        .mockRejectedValueOnce(new Error('IndexedDB error'))
+        .mockResolvedValueOnce({ inserted: true, route: { activityId: 'strava:2', pointCount: 2 } });
+
+      const items = [
+        { activityId: 'strava:1', providerActivityId: '1', fetchResult: { success: true, latlng: [[19.94, 50.06], [19.95, 50.07]] } as RouteFetchResult },
+        { activityId: 'strava:2', providerActivityId: '2', fetchResult: { success: true, latlng: [[19.96, 50.08], [19.97, 50.09]] } as RouteFetchResult },
+      ];
+
+      const result = await service.syncRoutesBatch(items);
+
+      expect(result.failed).toBe(1);
+      expect(result.synced).toBe(1);
+      expect(result.total).toBe(2);
+    });
+
+    it('should handle empty batch gracefully', async () => {
+      const result = await service.syncRoutesBatch([]);
+
+      expect(result.total).toBe(0);
+      expect(result.synced).toBe(0);
+      expect(result.failed).toBe(0);
+      expect(result.results).toHaveLength(0);
+    });
+  });
 });

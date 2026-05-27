@@ -11,6 +11,25 @@ export interface SyncRouteResult {
   route: UpsertRouteResult | null;
 }
 
+export interface RouteSyncBatchItem {
+  activityId: string;
+  providerActivityId: string;
+  fetchResult: RouteFetchResult;
+  /** Reason for skipping before the fetch, if any. */
+  skipReason?: string;
+}
+
+export interface RouteSyncBatchResult {
+  synced: number;
+  noRoute: number;
+  emptyRoute: number;
+  invalidCoordinates: number;
+  failed: number;
+  skipped: number;
+  total: number;
+  results: SyncRouteResult[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -44,6 +63,51 @@ export class RouteSyncService {
     );
 
     return { routeStored: true, routeSyncStatus: 'route_synced', route: routeResult };
+  }
+
+  async syncRoutesBatch(items: RouteSyncBatchItem[]): Promise<RouteSyncBatchResult> {
+    const results: SyncRouteResult[] = [];
+    const counters: RouteSyncBatchResult = {
+      synced: 0, noRoute: 0, emptyRoute: 0, invalidCoordinates: 0, failed: 0, skipped: 0, total: items.length, results: [],
+    };
+
+    for (const item of items) {
+      if (item.skipReason) {
+        counters.skipped++;
+        continue;
+      }
+
+      try {
+        const result = await this.syncRoute(item.activityId, item.providerActivityId, item.fetchResult);
+        results.push(result);
+
+        switch (result.routeSyncStatus) {
+          case 'route_synced':
+            counters.synced++;
+            break;
+          case 'no_route':
+            counters.noRoute++;
+            break;
+          case 'empty_route':
+            counters.emptyRoute++;
+            break;
+          case 'invalid_coordinates':
+            counters.invalidCoordinates++;
+            break;
+          case 'route_failed':
+            counters.failed++;
+            break;
+          case 'skipped':
+            counters.skipped++;
+            break;
+        }
+      } catch {
+        counters.failed++;
+      }
+    }
+
+    counters.results = results;
+    return counters;
   }
 }
 
