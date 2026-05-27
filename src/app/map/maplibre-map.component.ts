@@ -9,6 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
+import { BasemapProviderService } from './basemap-provider.service';
 import { MapLibreService } from './maplibre.service';
 
 @Component({
@@ -27,6 +28,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private readonly mapContainer!: ElementRef<HTMLElement>;
 
   private readonly mapLibreService = inject(MapLibreService);
+  private readonly basemapProviderService = inject(BasemapProviderService);
   private isDestroyed = false;
   private map: Map | null = null;
 
@@ -34,7 +36,8 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     let map: Map;
 
     try {
-      map = await this.mapLibreService.createMap(this.mapContainer.nativeElement);
+      const basemapProvider = this.basemapProviderService.getSelectedProvider();
+      map = await this.mapLibreService.createMap(this.mapContainer.nativeElement, basemapProvider);
     } catch {
       this.basemapLoadFailed.emit();
       return;
