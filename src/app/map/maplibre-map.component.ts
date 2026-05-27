@@ -1,4 +1,13 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  OnDestroy,
+  Output,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { type Map } from 'maplibre-gl';
 import { MapLibreService } from './maplibre.service';
 
@@ -11,6 +20,9 @@ import { MapLibreService } from './maplibre.service';
   `,
 })
 export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
+  @Output()
+  readonly basemapLoadFailed = new EventEmitter<void>();
+
   @ViewChild('mapContainer', { static: true })
   private readonly mapContainer!: ElementRef<HTMLElement>;
 
@@ -19,12 +31,23 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private map: Map | null = null;
 
   async ngAfterViewInit(): Promise<void> {
-    const map = await this.mapLibreService.createMap(this.mapContainer.nativeElement);
+    let map: Map;
+
+    try {
+      map = await this.mapLibreService.createMap(this.mapContainer.nativeElement);
+    } catch {
+      this.basemapLoadFailed.emit();
+      return;
+    }
 
     if (this.isDestroyed) {
       map.remove();
       return;
     }
+
+    map.once('error', () => {
+      this.basemapLoadFailed.emit();
+    });
 
     this.map = map;
   }

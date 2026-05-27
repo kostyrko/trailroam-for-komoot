@@ -44,10 +44,10 @@ export class ActivitiesPage {}
           <p>
             Your local activities and routes are unaffected. Check your connection and try loading the map again.
           </p>
-          <button class="primary-action" type="button">Retry map load</button>
+          <button class="primary-action" type="button" (click)="retryBasemapLoad()">Retry map load</button>
         </article>
       } @else {
-        <app-maplibre-map />
+        <app-maplibre-map (basemapLoadFailed)="showBasemapError()" />
 
         <article class="empty-state" aria-labelledby="map-empty-title">
           <p class="empty-state-kicker">No routes yet</p>
@@ -71,9 +71,18 @@ export class MapPage {
     this.route.queryParamMap.pipe(map((params) => params.get('basemapError') === 'true')),
     { initialValue: false },
   );
+  private readonly mapBasemapError = signal(false);
 
   protected readonly selectedActivityId = computed(() => this.activityId());
-  protected readonly hasBasemapError = computed(() => this.basemapError());
+  protected readonly hasBasemapError = computed(() => this.basemapError() || this.mapBasemapError());
+
+  protected showBasemapError(): void {
+    this.mapBasemapError.set(true);
+  }
+
+  protected retryBasemapLoad(): void {
+    this.mapBasemapError.set(false);
+  }
 }
 
 @Component({

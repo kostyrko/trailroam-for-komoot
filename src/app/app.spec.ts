@@ -75,11 +75,13 @@ describe('ActivitiesPage', () => {
 
 describe('MapPage', () => {
   let createMap: ReturnType<typeof vi.fn>;
+  let onMapEvent: ReturnType<typeof vi.fn>;
   let removeMap: ReturnType<typeof vi.fn>;
 
   function configureMapPage(queryParams: Record<string, string> = {}): void {
+    onMapEvent = vi.fn();
     removeMap = vi.fn();
-    createMap = vi.fn().mockReturnValue({ remove: removeMap });
+    createMap = vi.fn().mockResolvedValue({ once: onMapEvent, remove: removeMap });
 
     TestBed.configureTestingModule({
       imports: [MapPage],
@@ -100,17 +102,54 @@ describe('MapPage', () => {
     });
   }
 
-  it('should render no route state', () => {
+  it('should render no route state', async () => {
     configureMapPage();
 
     const fixture = TestBed.createComponent(MapPage);
     fixture.detectChanges();
+    await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.map-shell')).toBeTruthy();
     expect(createMap).toHaveBeenCalledOnce();
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('No routes yet');
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync new activities');
+  });
+
+  it('should update to basemap error state when map loading fails', async () => {
+    configureMapPage();
+
+    const fixture = TestBed.createComponent(MapPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const errorHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'error')?.[1];
+    errorHandler();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.map-shell')).toBeFalsy();
+    expect(compiled.querySelector('.warning-state')?.textContent).toContain('Basemap unavailable');
+  });
+
+  it('should retry map load after a basemap error', async () => {
+    configureMapPage();
+
+    const fixture = TestBed.createComponent(MapPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const errorHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'error')?.[1];
+    errorHandler();
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.warning-state button')?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.map-shell')).toBeTruthy();
+    expect(createMap).toHaveBeenCalledTimes(2);
   });
 
   it('should render basemap error state', () => {

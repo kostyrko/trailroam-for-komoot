@@ -1,19 +1,7 @@
 import { Injectable } from '@angular/core';
-import { type Map, type StyleSpecification } from 'maplibre-gl';
+import { type Map } from 'maplibre-gl';
 
-const INITIAL_MAP_STYLE: StyleSpecification = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: 'trailroam-background',
-      type: 'background',
-      paint: {
-        'background-color': '#eef5f0',
-      },
-    },
-  ],
-};
+export const OPENFREEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 @Injectable({
   providedIn: 'root',
@@ -24,7 +12,7 @@ export class MapLibreService {
 
     return new maplibregl.Map({
       container,
-      style: INITIAL_MAP_STYLE,
+      style: OPENFREEMAP_STYLE_URL,
       center: [19.94498, 50.06465],
       zoom: 10,
     });
