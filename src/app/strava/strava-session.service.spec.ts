@@ -52,7 +52,7 @@ describe('StravaSessionService', () => {
       await expect(service.checkSession()).resolves.toBe('login_required');
 
       expect(headReject).toHaveBeenCalledWith(
-        expect.stringContaining('strava.com'),
+        'https://www.strava.com/dashboard',
         expect.objectContaining({ method: 'HEAD' }),
       );
     });

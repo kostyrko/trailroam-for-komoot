@@ -40,9 +40,15 @@ export type RouteFetchResult =
 const STRAVA_ACTIVITIES_URL = 'https://www.strava.com/athlete/training/activities';
 const STRAVA_STREAMS_URL = 'https://www.strava.com/api/v3/activities';
 
+/** Lightweight page that returns 200 + specific patterns when logged in. */
+const STRAVA_DASHBOARD_URL = 'https://www.strava.com/dashboard';
+
 const KNOWN_RESPONSE_PATTERNS: { pattern: RegExp; status: SessionStatus }[] = [
   { pattern: /"data":\s*\[/i, status: 'logged_in' },
   { pattern: /"activities":/i, status: 'logged_in' },
+  { pattern: /athlete\.id/i, status: 'logged_in' },
+  { pattern: /"currentUser"/i, status: 'logged_in' },
+  { pattern: /data-react-class="Dashboard"/i, status: 'logged_in' },
   { pattern: /login|log in|sign in/i, status: 'login_required' },
   { pattern: /strava\.com\/login/i, status: 'login_required' },
 ];
@@ -60,7 +66,7 @@ export class StravaSessionService {
    */
   async checkSession(): Promise<SessionStatus> {
     try {
-      const response = await fetch(STRAVA_ACTIVITIES_URL, {
+      const response = await fetch(STRAVA_DASHBOARD_URL, {
         credentials: 'include',
         method: 'HEAD',
       });
@@ -181,7 +187,7 @@ export class StravaSessionService {
   }
 
   private async checkSessionViaTextFetch(): Promise<SessionStatus> {
-    const response = await fetch(STRAVA_ACTIVITIES_URL, {
+    const response = await fetch(STRAVA_DASHBOARD_URL, {
       credentials: 'include',
     });
 
