@@ -24,7 +24,7 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "index": "src/index.html",
-            "baseHref": "./index.html",
+            "baseHref": "./",
             "inlineStyleLanguage": "scss",
             "assets": [
               {

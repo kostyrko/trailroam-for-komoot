@@ -46,7 +46,8 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     try {
       const basemapProvider = this.basemapProviderService.getSelectedProvider();
       map = await this.mapLibreService.createMap(this.mapContainer.nativeElement, basemapProvider);
-    } catch {
+    } catch (err) {
+      console.error('MapLibre initialization failed:', err);
       this.emitBasemapLoadFailed();
       return;
     }
@@ -56,7 +57,8 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    map.once('error', () => {
+    map.once('error', (err) => {
+      console.error('MapLibre runtime error:', err);
       this.emitBasemapLoadFailed();
     });
     map.once('load', () => {
