@@ -127,6 +127,124 @@ describe('TrailroamDatabase', () => {
     await expect(repositories.settings.get()).resolves.toEqual(settings);
   });
 
+  describe('activities upsert', () => {
+    function createActivity(overrides: Partial<ActivityRecord> = {}): ActivityRecord {
+      const now = new Date().toISOString();
+      return {
+        id: 'strava:100',
+        provider: 'strava',
+        providerActivityId: '100',
+        name: 'Morning Ride',
+        sportType: 'Ride',
+        activityCategory: 'ride',
+        startDate: '2026-05-01T08:00:00.000Z',
+        distanceMeters: 42000,
+        movingTimeSeconds: 7200,
+        hasRoute: false,
+        routeSyncStatus: 'not_attempted',
+        importedAt: now,
+        updatedAt: now,
+        ...overrides,
+      };
+    }
+
+    it('should insert a new record and return inserted: true', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity();
+
+      const result = await repositories.activities.upsert(activity);
+
+      expect(result.inserted).toBe(true);
+      expect(result.activity.id).toBe('strava:100');
+    });
+
+    it('should return inserted: false for an existing record', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity();
+
+      await repositories.activities.upsert(activity);
+      const result = await repositories.activities.upsert(activity);
+
+      expect(result.inserted).toBe(false);
+    });
+
+    it('should preserve hasRoute from the existing record when it was set to true', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity({ hasRoute: true });
+
+      await repositories.activities.upsert(activity);
+
+      const updatedActivity = createActivity({ name: 'Updated Name', hasRoute: false });
+      const result = await repositories.activities.upsert(updatedActivity);
+
+      expect(result.activity.hasRoute).toBe(true);
+    });
+
+    it('should preserve routeSyncStatus from the existing record', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity({ routeSyncStatus: 'route_synced' });
+
+      await repositories.activities.upsert(activity);
+
+      const updatedActivity = createActivity({ name: 'Updated Name', routeSyncStatus: 'not_attempted' });
+      const result = await repositories.activities.upsert(updatedActivity);
+
+      expect(result.activity.name).toBe('Updated Name');
+      expect(result.activity.routeSyncStatus).toBe('route_synced');
+    });
+
+    it('should update updatedAt on existing records', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity();
+
+      await repositories.activities.upsert(activity);
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const updatedActivity = createActivity({ name: 'Updated Name' });
+      const result = await repositories.activities.upsert(updatedActivity);
+
+      expect(result.activity.updatedAt).not.toBe(activity.updatedAt);
+      expect(new Date(result.activity.updatedAt).getTime()).toBeGreaterThan(
+        new Date(activity.updatedAt).getTime(),
+      );
+    });
+
+    it('should preserve importedAt from the existing record', async () => {
+      const repositories = createRepositories(db);
+      const activity = createActivity();
+
+      await repositories.activities.upsert(activity);
+
+      const updatedActivity = createActivity({ name: 'Updated Name' });
+      const result = await repositories.activities.upsert(updatedActivity);
+
+      expect(result.activity.importedAt).toBe(activity.importedAt);
+    });
+
+    it('should not duplicate records when upserting multiple times', async () => {
+      const repositories = createRepositories(db);
+
+      await repositories.activities.upsert(createActivity());
+      await repositories.activities.upsert(createActivity({ name: 'Updated Name' }));
+      await repositories.activities.upsert(createActivity({ name: 'Updated Again' }));
+
+      const all = await repositories.activities.list();
+      expect(all).toHaveLength(1);
+    });
+
+    it('should upsert multiple distinct activities without conflict', async () => {
+      const repositories = createRepositories(db);
+
+      const result1 = await repositories.activities.upsert(createActivity({ id: 'strava:1', providerActivityId: '1' }));
+      const result2 = await repositories.activities.upsert(createActivity({ id: 'strava:2', providerActivityId: '2' }));
+
+      expect(result1.inserted).toBe(true);
+      expect(result2.inserted).toBe(true);
+      expect(await repositories.activities.list()).toHaveLength(2);
+    });
+  });
+
   it('should keep existing settings after reopening the database', async () => {
     const databaseName = db.name;
     const repositories = createRepositories(db);
