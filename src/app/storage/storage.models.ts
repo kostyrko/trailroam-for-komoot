@@ -7,6 +7,7 @@ export type ActivityCategory =
   | 'walk'
   | 'hike'
   | 'water'
+  | 'paddling'
   | 'winter'
   | 'other';
 
