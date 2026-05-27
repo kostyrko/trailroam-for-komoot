@@ -12,7 +12,7 @@
     </nav>
 
     <div class="header-actions" aria-label="Sync controls">
-      <span class="sync-status" [class.status-ok]="sessionStatus() === 'logged_in'" [class.status-warn]="sessionStatus() === 'login_required'">
+      <span class="sync-status" [class.status-ok]="sessionStatus() === 'logged_in'" [class.status-warn]="sessionStatus() !== 'logged_in' && !isCheckingSession()">
         @if (isCheckingSession()) {
           Checking session…
         } @else {
@@ -33,22 +33,27 @@
     </div>
   </header>
 
-  @if (sessionStatus() === 'login_required') {
-    <section class="session-alert" aria-labelledby="session-alert-title" role="alert">
-      <div>
-        <p class="alert-kicker">Strava login required</p>
-        <h2 id="session-alert-title">Please log in to Strava first.</h2>
-        <p>Open strava.com, sign in, then return to Trailroam for Strava.</p>
-      </div>
-      <div class="alert-actions">
-        <a class="secondary-action" href="https://www.strava.com/login" target="_blank" rel="noreferrer">
-          Open Strava
-        </a>
-        <button class="secondary-action" type="button" (click)="checkSession()" [disabled]="isCheckingSession()">
-          {{ isCheckingSession() ? 'Checking…' : 'Retry' }}
-        </button>
-      </div>
-    </section>
+  @if (sessionStatus() !== 'logged_in') {
+    @if (sessionStatus() === 'login_required' || sessionStatus() === 'unknown_error') {
+      <section class="session-alert" aria-labelledby="session-alert-title" role="alert">
+        <div>
+          <p class="alert-kicker">Strava login required</p>
+          <h2 id="session-alert-title">Please log in to Strava first.</h2>
+          <p>Open strava.com, sign in, then return to Trailroam for Strava.</p>
+          @if (sessionStatus() === 'unknown_error') {
+            <p class="alert-hint">The extension could not reach Strava. Make sure you are connected to the internet.</p>
+          }
+        </div>
+        <div class="alert-actions">
+          <a class="secondary-action" href="https://www.strava.com/login" target="_blank" rel="noreferrer">
+            Open Strava
+          </a>
+          <button class="secondary-action" type="button" (click)="checkSession()" [disabled]="isCheckingSession()">
+            {{ isCheckingSession() ? 'Checking…' : 'Retry' }}
+          </button>
+        </div>
+      </section>
+    }
   }
 
   <section class="app-content" aria-label="Trailroam workspace">

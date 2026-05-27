@@ -9,6 +9,10 @@ import { RouteRendererService } from './map/route-renderer.service';
 import { LocalDataService } from './storage/local-data.service';
 import { StravaSessionService, type SessionStatus } from './strava/strava-session.service';
 
+function flushMicrotasks(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('App', () => {
   function configureApp(checkSession: () => Promise<SessionStatus>): void {
     TestBed.configureTestingModule({
@@ -23,7 +27,7 @@ describe('App', () => {
     });
   }
 
-  it('should create the app', async () => {
+  it('should create the app', () => {
     configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     expect(fixture.componentInstance).toBeTruthy();
@@ -33,7 +37,7 @@ describe('App', () => {
     configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = [...compiled.querySelectorAll('nav a')].map((link) => link.textContent?.trim());
@@ -44,7 +48,7 @@ describe('App', () => {
     configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const syncButton = compiled.querySelector<HTMLButtonElement>('.sync-menu-trigger');
@@ -59,7 +63,7 @@ describe('App', () => {
     configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -71,7 +75,7 @@ describe('App', () => {
     configureApp(() => Promise.resolve('login_required'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -86,7 +90,7 @@ describe('App', () => {
     configureApp(() => Promise.resolve('login_required'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
 
     const syncButton = fixture.nativeElement.querySelector('.sync-menu-trigger') as HTMLButtonElement;
@@ -97,27 +101,41 @@ describe('App', () => {
     configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
 
     const syncButton = fixture.nativeElement.querySelector('.sync-menu-trigger') as HTMLButtonElement;
     expect(syncButton?.disabled).toBe(false);
   });
 
+  it('should show Connection error banner when session check returns unknown_error', async () => {
+    configureApp(() => Promise.resolve('unknown_error'));
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await flushMicrotasks();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.sync-status')?.textContent).toContain('Connection error');
+    expect(compiled.querySelector('.session-alert')).toBeTruthy();
+    expect(compiled.querySelector('.alert-hint')?.textContent).toContain('could not reach Strava');
+  });
+
   it('should re-check session on retry button click', async () => {
-    let callCount = 0;
-    const results: SessionStatus[] = ['login_required', 'login_required'];
-    const checkSession = vi.fn().mockImplementation(() => Promise.resolve(results[callCount++]));
+    const checkSession = vi.fn().mockResolvedValue('login_required');
     configureApp(() => checkSession());
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
-    checkSession.mockReset().mockResolvedValue(undefined);
 
+    checkSession.mockReset().mockResolvedValue('login_required');
     const retryButton = fixture.nativeElement.querySelector('.alert-actions button:last-child') as HTMLButtonElement;
     expect(retryButton).toBeTruthy();
-    retryButton?.click();
+    expect(retryButton.textContent).toContain('Retry');
+    retryButton.click();
+    await flushMicrotasks();
+    fixture.detectChanges();
     expect(checkSession).toHaveBeenCalledOnce();
   });
 
@@ -127,12 +145,12 @@ describe('App', () => {
     configureApp(() => Promise.resolve(results[callIndex++]));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.session-alert')).toBeTruthy();
 
     fixture.nativeElement.querySelector('.alert-actions button')?.click();
-    await fixture.whenStable();
+    await flushMicrotasks();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.session-alert')).toBeFalsy();
   });

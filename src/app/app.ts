@@ -23,10 +23,16 @@ export class App {
 
   protected checkSession(): void {
     this.isCheckingSession.set(true);
-    this.stravaSessionService.checkSession().then((status) => {
-      this.sessionStatus.set(status);
-      this.isCheckingSession.set(false);
-    });
+    this.stravaSessionService.checkSession()
+      .then((status) => {
+        this.sessionStatus.set(status);
+      })
+      .catch(() => {
+        this.sessionStatus.set('unknown_error');
+      })
+      .finally(() => {
+        this.isCheckingSession.set(false);
+      });
   }
 
   protected get statusLabel(): string {
@@ -36,8 +42,10 @@ export class App {
         return 'Ready';
       case 'login_required':
         return 'Login required';
+      case 'unknown_error':
+        return 'Connection error';
       default:
-        return 'Checking session…';
+        return 'Unknown';
     }
   }
 
