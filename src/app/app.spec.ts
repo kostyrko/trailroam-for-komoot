@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { App } from './app';
-import { ActivitiesPage, MapPage, SettingsPage, routes } from './app.routes';
+import { ActivitiesPageComponent } from './activities/activities-page.component';
+import { MapPage, SettingsPage, routes } from './app.routes';
 import { MapLibreService } from './map/maplibre.service';
 import { MOCK_ROUTES } from './map/mock-routes';
 import { RouteRendererService } from './map/route-renderer.service';
@@ -263,18 +264,17 @@ describe('App', () => {
   });
 });
 
-describe('ActivitiesPage', () => {
-  it('should render no data state', () => {
+describe('ActivitiesPageComponent', () => {
+  it('should render loading state initially', () => {
     TestBed.configureTestingModule({
-      imports: [ActivitiesPage],
+      imports: [ActivitiesPageComponent],
     });
 
-    const fixture = TestBed.createComponent(ActivitiesPage);
+    const fixture = TestBed.createComponent(ActivitiesPageComponent);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.empty-state')?.textContent).toContain('No activities yet');
-    expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync new activities');
+    expect(compiled.querySelector('.empty-state-kicker')?.textContent).toContain('Loading');
   });
 });
 

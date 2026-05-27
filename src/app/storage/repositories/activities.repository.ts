@@ -43,6 +43,19 @@ export class ActivitiesRepository {
     return this.db.activities.orderBy('startDate').reverse().toArray();
   }
 
+  async listPage(page: number, pageSize: number): Promise<ActivityRecord[]> {
+    return this.db.activities
+      .orderBy('startDate')
+      .reverse()
+      .offset((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+  }
+
+  async count(): Promise<number> {
+    return this.db.activities.count();
+  }
+
   async clear(): Promise<void> {
     await this.db.activities.clear();
   }

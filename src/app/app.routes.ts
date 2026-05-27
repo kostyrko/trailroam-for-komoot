@@ -2,29 +2,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Routes } from '@angular/router';
 import { map } from 'rxjs';
+import { ActivitiesPageComponent } from './activities/activities-page.component';
 import { MapLibreMapComponent } from './map/maplibre-map.component';
 import { type MockRoute } from './map/mock-routes';
 import { LocalDataService } from './storage/local-data.service';
-
-@Component({
-  selector: 'app-activities-page',
-  template: `
-    <section class="route-page" aria-labelledby="activities-title">
-      <p class="eyebrow">Activities</p>
-      <h1 id="activities-title">Activities</h1>
-
-      <article class="empty-state" aria-labelledby="activities-empty-title">
-        <p class="empty-state-kicker">No activities yet</p>
-        <h2 id="activities-empty-title">Sync new activities to start building your local history.</h2>
-        <p>
-          Trailroam will show imported Strava activities here after the first successful sync.
-        </p>
-        <button class="primary-action" type="button">Sync new activities</button>
-      </article>
-    </section>
-  `,
-})
-export class ActivitiesPage {}
 
 @Component({
   selector: 'app-map-page',
@@ -163,7 +144,7 @@ export const routes: Routes = [
   },
   {
     path: 'activities',
-    component: ActivitiesPage,
+    component: ActivitiesPageComponent,
   },
   {
     path: 'map',
