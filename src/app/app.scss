@@ -89,6 +89,23 @@
   white-space: nowrap;
 }
 
+.status-ok {
+  border-color: #1f6f50;
+  color: #1f6f50;
+}
+
+.status-warn {
+  background: #fef5e7;
+  border-color: #e6a817;
+  color: #8f6b0e;
+}
+
+.sync-menu-trigger:disabled {
+  background: #a0b4a6;
+  cursor: default;
+  pointer-events: auto;
+}
+
 .sync-menu-trigger {
   align-items: center;
   background: #1f6f50;

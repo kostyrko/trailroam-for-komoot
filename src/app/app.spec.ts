@@ -7,34 +7,45 @@ import { MapLibreService } from './map/maplibre.service';
 import { MOCK_ROUTES } from './map/mock-routes';
 import { RouteRendererService } from './map/route-renderer.service';
 import { LocalDataService } from './storage/local-data.service';
+import { StravaSessionService, type SessionStatus } from './strava/strava-session.service';
 
 describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
+  function configureApp(checkSession: () => Promise<SessionStatus>): void {
+    TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes)],
-    }).compileComponents();
-  });
+      providers: [
+        provideRouter(routes),
+        {
+          provide: StravaSessionService,
+          useValue: { checkSession },
+        },
+      ],
+    });
+  }
 
-  it('should create the app', () => {
+  it('should create the app', async () => {
+    configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
   it('should render primary navigation', async () => {
+    configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = [...compiled.querySelectorAll('nav a')].map((link) => link.textContent?.trim());
     expect(links).toEqual(['Activities', 'Map', 'Settings']);
   });
 
   it('should render header sync action slot', async () => {
+    configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const syncButton = compiled.querySelector<HTMLButtonElement>('.sync-menu-trigger');
 
@@ -44,19 +55,86 @@ describe('App', () => {
     expect(syncButton?.getAttribute('aria-haspopup')).toBe('menu');
   });
 
-  it('should show login required state after sync is requested', async () => {
+  it('should show Ready status when session is logged in', async () => {
+    configureApp(() => Promise.resolve('logged_in'));
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
+    fixture.detectChanges();
 
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.sync-menu-trigger')?.click();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.sync-status')?.textContent).toContain('Ready');
+    expect(compiled.querySelector('.session-alert')).toBeFalsy();
+  });
+
+  it('should show login-required banner when session check returns login_required', async () => {
+    configureApp(() => Promise.resolve('login_required'));
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.sync-status')?.textContent).toContain('Login required');
+    expect(compiled.querySelector('.session-alert')).toBeTruthy();
     expect(compiled.querySelector('.session-alert')?.textContent).toContain('Please log in to Strava first.');
     expect(compiled.querySelector('.session-alert')?.textContent).toContain('Open Strava');
     expect(compiled.querySelector('.session-alert')?.textContent).toContain('Retry');
+  });
+
+  it('should disable sync button when session is not logged in', async () => {
+    configureApp(() => Promise.resolve('login_required'));
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const syncButton = fixture.nativeElement.querySelector('.sync-menu-trigger') as HTMLButtonElement;
+    expect(syncButton?.disabled).toBe(true);
+  });
+
+  it('should enable sync button when session is logged in', async () => {
+    configureApp(() => Promise.resolve('logged_in'));
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const syncButton = fixture.nativeElement.querySelector('.sync-menu-trigger') as HTMLButtonElement;
+    expect(syncButton?.disabled).toBe(false);
+  });
+
+  it('should re-check session on retry button click', async () => {
+    let callCount = 0;
+    const results: SessionStatus[] = ['login_required', 'login_required'];
+    const checkSession = vi.fn().mockImplementation(() => Promise.resolve(results[callCount++]));
+    configureApp(() => checkSession());
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    checkSession.mockReset().mockResolvedValue(undefined);
+
+    const retryButton = fixture.nativeElement.querySelector('.alert-actions button:last-child') as HTMLButtonElement;
+    expect(retryButton).toBeTruthy();
+    retryButton?.click();
+    expect(checkSession).toHaveBeenCalledOnce();
+  });
+
+  it('should re-check session and dismiss banner when session is restored', async () => {
+    let callIndex = 0;
+    const results: SessionStatus[] = ['login_required', 'logged_in'];
+    configureApp(() => Promise.resolve(results[callIndex++]));
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.session-alert')).toBeTruthy();
+
+    fixture.nativeElement.querySelector('.alert-actions button')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.session-alert')).toBeFalsy();
   });
 });
 
