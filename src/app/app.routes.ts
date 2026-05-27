@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Routes } from '@angular/router';
 import { map } from 'rxjs';
 import { MapLibreMapComponent } from './map/maplibre-map.component';
+import { type MockRoute } from './map/mock-routes';
 import { LocalDataService } from './storage/local-data.service';
 
 @Component({
@@ -37,6 +38,10 @@ export class ActivitiesPage {}
         <p class="route-state">Selected activity: {{ selectedActivityId() }}</p>
       }
 
+      @if (selectedMockRoute()) {
+        <p class="route-state" role="status">Selected route: {{ selectedMockRoute()?.name }}</p>
+      }
+
       @if (hasBasemapError()) {
         <article class="empty-state warning-state" aria-labelledby="basemap-error-title" role="alert">
           <p class="empty-state-kicker">Basemap unavailable</p>
@@ -47,7 +52,10 @@ export class ActivitiesPage {}
           <button class="primary-action" type="button" (click)="retryBasemapLoad()">Retry map load</button>
         </article>
       } @else {
-        <app-maplibre-map (basemapLoadFailed)="showBasemapError()" />
+        <app-maplibre-map
+          (basemapLoadFailed)="showBasemapError()"
+          (routeSelected)="selectMockRoute($event)"
+        />
 
         <article class="empty-state" aria-labelledby="map-empty-title">
           <p class="empty-state-kicker">No routes yet</p>
@@ -72,6 +80,7 @@ export class MapPage {
     { initialValue: false },
   );
   private readonly mapBasemapError = signal(false);
+  protected readonly selectedMockRoute = signal<MockRoute | null>(null);
 
   protected readonly selectedActivityId = computed(() => this.activityId());
   protected readonly hasBasemapError = computed(() => this.basemapError() || this.mapBasemapError());
@@ -82,6 +91,10 @@ export class MapPage {
 
   protected retryBasemapLoad(): void {
     this.mapBasemapError.set(false);
+  }
+
+  protected selectMockRoute(route: MockRoute): void {
+    this.selectedMockRoute.set(route);
   }
 }
 

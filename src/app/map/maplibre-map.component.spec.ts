@@ -4,11 +4,14 @@ import { OPENFREEMAP_BASEMAP_PROVIDER, type ResolvedBasemapProvider } from './ba
 import { BasemapProviderService } from './basemap-provider.service';
 import { MapLibreMapComponent } from './maplibre-map.component';
 import { MapLibreService } from './maplibre.service';
+import { MOCK_ROUTES } from './mock-routes';
+import { RouteRendererService } from './route-renderer.service';
 
 describe('MapLibreMapComponent', () => {
   let createMap: ReturnType<typeof vi.fn>;
   let getSelectedProvider: ReturnType<typeof vi.fn>;
   let once: ReturnType<typeof vi.fn>;
+  let renderMockRoutes: ReturnType<typeof vi.fn>;
   let remove: ReturnType<typeof vi.fn>;
   let resolvedProvider: ResolvedBasemapProvider;
   let fixture: ComponentFixture<MapLibreMapComponent>;
@@ -20,6 +23,7 @@ describe('MapLibreMapComponent', () => {
     };
     getSelectedProvider = vi.fn().mockReturnValue(resolvedProvider);
     once = vi.fn();
+    renderMockRoutes = vi.fn();
     remove = vi.fn();
     createMap = vi.fn().mockResolvedValue({ once, remove } as unknown as Map);
 
@@ -33,6 +37,10 @@ describe('MapLibreMapComponent', () => {
         {
           provide: BasemapProviderService,
           useValue: { getSelectedProvider },
+        },
+        {
+          provide: RouteRendererService,
+          useValue: { renderMockRoutes },
         },
       ],
     });
@@ -91,5 +99,31 @@ describe('MapLibreMapComponent', () => {
     await fixture.whenStable();
 
     expect(basemapLoadFailed).toHaveBeenCalledOnce();
+  });
+
+  it('should render mock routes after MapLibre load', async () => {
+    fixture = TestBed.createComponent(MapLibreMapComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const loadHandler = once.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
+    loadHandler();
+
+    expect(renderMockRoutes).toHaveBeenCalledOnce();
+  });
+
+  it('should emit selected mock routes from the renderer callback', async () => {
+    const routeSelected = vi.fn();
+    fixture = TestBed.createComponent(MapLibreMapComponent);
+    fixture.componentInstance.routeSelected.subscribe(routeSelected);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const loadHandler = once.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
+    loadHandler();
+    const rendererCallback = renderMockRoutes.mock.calls[0][1];
+    rendererCallback(MOCK_ROUTES[0]);
+
+    expect(routeSelected).toHaveBeenCalledWith(MOCK_ROUTES[0]);
   });
 });

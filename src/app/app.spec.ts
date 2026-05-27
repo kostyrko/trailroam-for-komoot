@@ -4,6 +4,8 @@ import { of } from 'rxjs';
 import { App } from './app';
 import { ActivitiesPage, MapPage, SettingsPage, routes } from './app.routes';
 import { MapLibreService } from './map/maplibre.service';
+import { MOCK_ROUTES } from './map/mock-routes';
+import { RouteRendererService } from './map/route-renderer.service';
 import { LocalDataService } from './storage/local-data.service';
 
 describe('App', () => {
@@ -76,10 +78,12 @@ describe('ActivitiesPage', () => {
 describe('MapPage', () => {
   let createMap: ReturnType<typeof vi.fn>;
   let onMapEvent: ReturnType<typeof vi.fn>;
+  let renderMockRoutes: ReturnType<typeof vi.fn>;
   let removeMap: ReturnType<typeof vi.fn>;
 
   function configureMapPage(queryParams: Record<string, string> = {}): void {
     onMapEvent = vi.fn();
+    renderMockRoutes = vi.fn();
     removeMap = vi.fn();
     createMap = vi.fn().mockResolvedValue({ once: onMapEvent, remove: removeMap });
 
@@ -96,6 +100,12 @@ describe('MapPage', () => {
           provide: MapLibreService,
           useValue: {
             createMap,
+          },
+        },
+        {
+          provide: RouteRendererService,
+          useValue: {
+            renderMockRoutes,
           },
         },
       ],
@@ -150,6 +160,25 @@ describe('MapPage', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.map-shell')).toBeTruthy();
     expect(createMap).toHaveBeenCalledTimes(2);
+  });
+
+  it('should show the selected mock route after route click selection', async () => {
+    configureMapPage();
+
+    const fixture = TestBed.createComponent(MapPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const loadHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
+    loadHandler();
+    const routeSelected = renderMockRoutes.mock.calls[0][1];
+    routeSelected(MOCK_ROUTES[0]);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('[role="status"]')?.textContent).toContain(
+      `Selected route: ${MOCK_ROUTES[0].name}`,
+    );
   });
 
   it('should render basemap error state', () => {

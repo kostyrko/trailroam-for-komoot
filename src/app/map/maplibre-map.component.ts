@@ -10,7 +10,9 @@ import {
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
 import { BasemapProviderService } from './basemap-provider.service';
+import { type MockRoute } from './mock-routes';
 import { MapLibreService } from './maplibre.service';
+import { RouteRendererService } from './route-renderer.service';
 
 @Component({
   selector: 'app-maplibre-map',
@@ -24,11 +26,15 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   @Output()
   readonly basemapLoadFailed = new EventEmitter<void>();
 
+  @Output()
+  readonly routeSelected = new EventEmitter<MockRoute>();
+
   @ViewChild('mapContainer', { static: true })
   private readonly mapContainer!: ElementRef<HTMLElement>;
 
   private readonly mapLibreService = inject(MapLibreService);
   private readonly basemapProviderService = inject(BasemapProviderService);
+  private readonly routeRendererService = inject(RouteRendererService);
   private isDestroyed = false;
   private map: Map | null = null;
 
@@ -50,6 +56,11 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
 
     map.once('error', () => {
       this.basemapLoadFailed.emit();
+    });
+    map.once('load', () => {
+      this.routeRendererService.renderMockRoutes(map, (route) => {
+        this.routeSelected.emit(route);
+      });
     });
 
     this.map = map;
