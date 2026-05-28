@@ -15,23 +15,31 @@
       <span class="sync-status" [class.status-ok]="sessionStatus() === 'logged_in'" [class.status-warn]="sessionStatus() !== 'logged_in' && !isCheckingSession()">
         @if (isCheckingSession()) {
           Checking session…
+        } @else if (isSyncing()) {
+          Syncing…
         } @else {
           {{ statusLabel }}
         }
       </span>
 
       <div class="sync-menu-wrapper" (click)="$event.stopPropagation()">
-        <button
-          class="sync-menu-trigger"
-          type="button"
-          aria-haspopup="menu"
-          [attr.aria-expanded]="syncMenuOpen()"
-          [disabled]="!canSync"
-          (click)="toggleSyncMenu()"
-        >
-          Sync
-          <span aria-hidden="true">v</span>
-        </button>
+        @if (isSyncing()) {
+          <button class="sync-menu-trigger" type="button" disabled>
+            Syncing…
+          </button>
+        } @else {
+          <button
+            class="sync-menu-trigger"
+            type="button"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="syncMenuOpen()"
+            [disabled]="!canSync"
+            (click)="toggleSyncMenu()"
+          >
+            Sync
+            <span aria-hidden="true">v</span>
+          </button>
+        }
 
         @if (syncMenuOpen()) {
           <ul class="sync-dropdown" role="menu" aria-label="Sync and data management">

@@ -6,6 +6,7 @@ import {
 } from './strava/strava-session.service';
 import { SyncSummaryService, type SyncSummary } from './storage/sync-summary.service';
 import { LocalDataService } from './storage/local-data.service';
+import { SyncEngineService } from './sync/sync-engine.service';
 
 @Component({
   selector: 'app-root',
@@ -17,11 +18,14 @@ export class App {
   private readonly stravaSessionService = inject(StravaSessionService);
   private readonly syncSummaryService = inject(SyncSummaryService);
   private readonly localDataService = inject(LocalDataService);
+  private readonly syncEngine = inject(SyncEngineService);
 
   protected readonly sessionStatus = signal<SessionStatus>('unknown_error');
   protected readonly isCheckingSession = signal(false);
   protected readonly syncSummary = signal<SyncSummary | null>(null);
   protected readonly syncMenuOpen = signal(false);
+  protected readonly isSyncing = signal(false);
+  protected readonly syncProgress = this.syncEngine.progress;
 
   constructor() {
     this.checkSession();
@@ -69,11 +73,31 @@ export class App {
   }
 
   protected get canSync(): boolean {
-    return this.sessionStatus() === 'logged_in';
+    return this.sessionStatus() === 'logged_in' && !this.isSyncing();
   }
 
-  protected syncNewActivities(): void {
+  protected async syncNewActivities(): Promise<void> {
     this.closeSyncMenu();
+    if (this.isSyncing()) { return; }
+    this.isSyncing.set(true);
+    try {
+      const result = await this.syncEngine.syncNewActivities();
+      this.syncSummary.set({
+        importedCount: result.importedCount,
+        updatedCount: result.updatedCount,
+        routesSyncedCount: result.routesSyncedCount,
+        skippedCount: result.skippedCount,
+        failedCount: result.failedCount,
+        status: result.errorMessage ? 'failed' : 'completed',
+        completedAt: new Date().toISOString(),
+        lastSuccessfulSyncAt: result.errorMessage ? null : new Date().toISOString(),
+        lastErrorCode: result.errorMessage ? 'SYNC_ERROR' : null,
+        lastErrorMessage: result.errorMessage ?? null,
+        hasResults: true,
+      });
+    } finally {
+      this.isSyncing.set(false);
+    }
   }
 
   protected syncMissingRoutes(): void {
@@ -87,6 +111,7 @@ export class App {
     );
     if (!confirmed) { return; }
     await this.localDataService.clearSyncedLocalData();
+    await this.syncNewActivities();
   }
 
   protected async clearSyncedLocalData(): Promise<void> {

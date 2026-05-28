@@ -106,6 +106,10 @@
   pointer-events: auto;
 }
 
+.sync-menu-trigger:disabled:hover {
+  background: #a0b4a6;
+}
+
 .sync-menu-trigger {
   align-items: center;
   background: #1f6f50;
