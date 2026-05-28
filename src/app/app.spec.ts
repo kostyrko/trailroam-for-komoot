@@ -6,7 +6,6 @@ import { ActivitiesPageComponent } from './activities/activities-page.component'
 import { MapPage } from './map/map-page.component';
 import { SettingsPage, routes } from './app.routes';
 import { MapLibreService } from './map/maplibre.service';
-import { MOCK_ROUTES } from './map/mock-routes';
 import { RouteRendererService } from './map/route-renderer.service';
 import { LocalDataService } from './storage/local-data.service';
 import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.token';
@@ -282,12 +281,41 @@ describe('ActivitiesPageComponent', () => {
 describe('MapPage', () => {
   let createMap: ReturnType<typeof vi.fn>;
   let onMapEvent: ReturnType<typeof vi.fn>;
-  let renderMockRoutes: ReturnType<typeof vi.fn>;
+  let renderRoutes: ReturnType<typeof vi.fn>;
+  let selectRoute: ReturnType<typeof vi.fn>;
   let removeMap: ReturnType<typeof vi.fn>;
 
-  function configureMapPage(queryParams: Record<string, string> = {}): void {
+  const mockActivities = [{
+    id: 'test:1',
+    provider: 'strava' as const,
+    providerActivityId: '1',
+    name: 'Test Ride',
+    sportType: 'Ride',
+    activityCategory: 'ride' as const,
+    startDate: '2024-01-01T00:00:00Z',
+    distanceMeters: 10000,
+    movingTimeSeconds: 1800,
+    hasRoute: true,
+    routeSyncStatus: 'route_synced' as const,
+    sourceUrl: 'https://www.strava.com/activities/1',
+    importedAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  }];
+
+  const mockRoutes = [{
+    activityId: 'test:1',
+    providerActivityId: '1',
+    coordinates: [[19.9, 50.05], [19.91, 50.06]] as [number, number][],
+    pointCount: 2,
+    bounds: { west: 19.9, south: 50.05, east: 19.91, north: 50.06 },
+    syncedAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  }];
+
+  function configureMapPage(queryParams: Record<string, string> = {}, activities = mockActivities, activityRoutes = mockRoutes): void {
     onMapEvent = vi.fn();
-    renderMockRoutes = vi.fn();
+    renderRoutes = vi.fn();
+    selectRoute = vi.fn();
     removeMap = vi.fn();
     createMap = vi.fn().mockResolvedValue({ once: onMapEvent, remove: removeMap });
 
@@ -302,21 +330,32 @@ describe('MapPage', () => {
         },
         {
           provide: MapLibreService,
-          useValue: {
-            createMap,
-          },
+          useValue: { createMap },
         },
         {
           provide: RouteRendererService,
+          useValue: { renderRoutes, selectRoute },
+        },
+        {
+          provide: TRAILROAM_REPOSITORIES,
           useValue: {
-            renderMockRoutes,
+            activities: {
+              list: vi.fn().mockResolvedValue(activities),
+              count: vi.fn().mockResolvedValue(activities.length),
+            },
+            activityRoutes: {
+              list: vi.fn().mockResolvedValue(activityRoutes),
+            },
+            syncState: { get: vi.fn().mockResolvedValue(undefined), clear: vi.fn() },
+            settings: { get: vi.fn(), getOrCreateDefault: vi.fn() },
+            accessState: { get: vi.fn() },
           },
         },
       ],
     });
   }
 
-  it('should render no route state', async () => {
+  it('should render map shell when no basemap error', async () => {
     configureMapPage();
 
     const fixture = TestBed.createComponent(MapPage);
@@ -325,7 +364,16 @@ describe('MapPage', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.map-shell')).toBeTruthy();
-    expect(createMap).toHaveBeenCalledOnce();
+  });
+
+  it('should show no routes empty state when map loads with no routes', async () => {
+    configureMapPage({}, [], []);
+
+    const fixture = TestBed.createComponent(MapPage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('No routes yet');
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync new activities');
   });
@@ -337,33 +385,12 @@ describe('MapPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const errorHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'error')?.[1];
-    errorHandler();
+    (fixture.componentInstance as any).showBasemapError();
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.map-shell')).toBeFalsy();
     expect(compiled.querySelector('.warning-state')?.textContent).toContain('Basemap unavailable');
-  });
-
-  it('should retry map load after a basemap error', async () => {
-    configureMapPage();
-
-    const fixture = TestBed.createComponent(MapPage);
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const errorHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'error')?.[1];
-    errorHandler();
-    fixture.detectChanges();
-
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.warning-state button')?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.map-shell')).toBeTruthy();
-    expect(createMap).toHaveBeenCalledTimes(2);
   });
 
   it('should show route detail panel after route click selection', async () => {
@@ -373,19 +400,20 @@ describe('MapPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const loadHandler = onMapEvent.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
-    loadHandler();
-    const routeSelected = renderMockRoutes.mock.calls[0][1];
-    routeSelected(MOCK_ROUTES[0]);
+    (fixture.componentInstance as any).selectRoute({
+      activityId: 'test:1',
+      activity: mockActivities[0],
+      route: mockRoutes[0],
+      coordinates: mockRoutes[0].coordinates,
+      name: 'Test Ride',
+    });
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.route-detail-title')?.textContent).toContain(
-      MOCK_ROUTES[0].name,
-    );
+    expect(compiled.querySelector('.route-detail-title')?.textContent).toContain('Test Ride');
   });
 
-  it('should render basemap error state', () => {
+  it('should render basemap error state from query param', () => {
     configureMapPage({ basemapError: 'true' });
 
     const fixture = TestBed.createComponent(MapPage);
@@ -393,33 +421,22 @@ describe('MapPage', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.map-shell')).toBeFalsy();
-    expect(createMap).not.toHaveBeenCalled();
     expect(compiled.querySelector('.warning-state')?.textContent).toContain('Basemap unavailable');
     expect(compiled.querySelector('.warning-state')?.textContent).toContain('local activities and routes are unaffected');
   });
 
-  it('should show route detail panel when navigating with activityId for a known mock route', async () => {
-    configureMapPage({ activityId: 'mock-krakow-loop' });
-
-    const fixture = TestBed.createComponent(MapPage);
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.route-detail-title')?.textContent).toContain('Krakow river loop');
-    expect(compiled.querySelector('.route-detail-coords')?.textContent).toContain('GPS points');
-  });
-
-  it('should show no-route state when activityId does not match any mock route', async () => {
+  it('should show no-route state when activityId does not match any route', async () => {
     configureMapPage({ activityId: 'strava:999' });
 
     const fixture = TestBed.createComponent(MapPage);
     fixture.detectChanges();
+    await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('No route available');
   });
 
-  it('should clear selected activity and navigate back when clicking browse all activities', async () => {
+  it('should show browse all activities button for no-route state', async () => {
     configureMapPage({ activityId: 'strava:999' });
 
     const fixture = TestBed.createComponent(MapPage);

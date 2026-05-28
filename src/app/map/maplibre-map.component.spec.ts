@@ -4,14 +4,50 @@ import { OPENFREEMAP_BASEMAP_PROVIDER, type ResolvedBasemapProvider } from './ba
 import { BasemapProviderService } from './basemap-provider.service';
 import { MapLibreMapComponent } from './maplibre-map.component';
 import { MapLibreService } from './maplibre.service';
-import { MOCK_ROUTES } from './mock-routes';
+import { type MapRouteFeature } from './mock-routes';
 import { RouteRendererService } from './route-renderer.service';
+
+function makeMockRoute(overrides: Partial<MapRouteFeature> = {}): MapRouteFeature {
+  return {
+    activityId: 'test:1',
+    activity: {
+      id: 'test:1',
+      provider: 'strava',
+      providerActivityId: '1',
+      name: 'Test Ride',
+      sportType: 'Ride',
+      activityCategory: 'ride',
+      startDate: '2024-01-01T00:00:00Z',
+      distanceMeters: 10000,
+      movingTimeSeconds: 1800,
+      elapsedTimeSeconds: 2000,
+      hasRoute: true,
+      routeSyncStatus: 'route_synced',
+      sourceUrl: 'https://www.strava.com/activities/1',
+      importedAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    route: {
+      activityId: 'test:1',
+      providerActivityId: '1',
+      coordinates: [[19.9, 50.05], [19.91, 50.06]],
+      pointCount: 2,
+      bounds: { west: 19.9, south: 50.05, east: 19.91, north: 50.06 },
+      syncedAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    coordinates: [[19.9, 50.05], [19.91, 50.06]],
+    name: 'Test Ride',
+    ...overrides,
+  };
+}
 
 describe('MapLibreMapComponent', () => {
   let createMap: ReturnType<typeof vi.fn>;
   let getSelectedProvider: ReturnType<typeof vi.fn>;
   let once: ReturnType<typeof vi.fn>;
-  let renderMockRoutes: ReturnType<typeof vi.fn>;
+  let renderRoutes: ReturnType<typeof vi.fn>;
+  let selectRoute: ReturnType<typeof vi.fn>;
   let remove: ReturnType<typeof vi.fn>;
   let resolvedProvider: ResolvedBasemapProvider;
   let fixture: ComponentFixture<MapLibreMapComponent>;
@@ -23,7 +59,8 @@ describe('MapLibreMapComponent', () => {
     };
     getSelectedProvider = vi.fn().mockReturnValue(resolvedProvider);
     once = vi.fn();
-    renderMockRoutes = vi.fn();
+    renderRoutes = vi.fn();
+    selectRoute = vi.fn();
     remove = vi.fn();
     createMap = vi.fn().mockResolvedValue({ once, remove } as unknown as Map);
 
@@ -40,7 +77,7 @@ describe('MapLibreMapComponent', () => {
         },
         {
           provide: RouteRendererService,
-          useValue: { renderMockRoutes },
+          useValue: { renderRoutes, selectRoute },
         },
       ],
     });
@@ -101,29 +138,31 @@ describe('MapLibreMapComponent', () => {
     expect(basemapLoadFailed).toHaveBeenCalledOnce();
   });
 
-  it('should render mock routes after MapLibre load', async () => {
+  it('should render routes and select activity via renderRouteFeatures', async () => {
     fixture = TestBed.createComponent(MapLibreMapComponent);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const loadHandler = once.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
-    loadHandler();
+    const routes = [makeMockRoute()];
+    fixture.componentInstance.renderRouteFeatures(routes, 'test:1');
 
-    expect(renderMockRoutes).toHaveBeenCalledOnce();
+    expect(renderRoutes).toHaveBeenCalledOnce();
+    expect(selectRoute).toHaveBeenCalledWith(expect.anything(), 'test:1');
   });
 
-  it('should emit selected mock routes from the renderer callback', async () => {
+  it('should emit selected routes from the renderer callback', async () => {
     const routeSelected = vi.fn();
     fixture = TestBed.createComponent(MapLibreMapComponent);
     fixture.componentInstance.routeSelected.subscribe(routeSelected);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const loadHandler = once.mock.calls.find(([eventName]) => eventName === 'load')?.[1];
-    loadHandler();
-    const rendererCallback = renderMockRoutes.mock.calls[0][1];
-    rendererCallback(MOCK_ROUTES[0]);
+    const routes = [makeMockRoute()];
+    fixture.componentInstance.renderRouteFeatures(routes);
 
-    expect(routeSelected).toHaveBeenCalledWith(MOCK_ROUTES[0]);
+    const rendererCallback = renderRoutes.mock.calls[0][2];
+    rendererCallback(routes[0]);
+
+    expect(routeSelected).toHaveBeenCalledWith(routes[0]);
   });
 });

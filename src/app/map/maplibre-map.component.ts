@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
 import { BasemapProviderService } from './basemap-provider.service';
-import { type MockRoute } from './mock-routes';
+import { type MapRouteFeature } from './mock-routes';
 import { MapLibreService } from './maplibre.service';
 import { RouteRendererService } from './route-renderer.service';
 
@@ -28,7 +28,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   readonly basemapLoadFailed = new EventEmitter<void>();
 
   @Output()
-  readonly routeSelected = new EventEmitter<MockRoute>();
+  readonly routeSelected = new EventEmitter<MapRouteFeature>();
 
   @ViewChild('mapContainer', { static: true })
   private readonly mapContainer!: ElementRef<HTMLElement>;
@@ -38,7 +38,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private readonly routeRendererService = inject(RouteRendererService);
   private readonly ngZone = inject(NgZone);
   private isDestroyed = false;
-  private map: Map | null = null;
+  map: Map | null = null;
 
   async ngAfterViewInit(): Promise<void> {
     let map: Map;
@@ -61,15 +61,25 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
       console.error('MapLibre runtime error:', err);
       this.emitBasemapLoadFailed();
     });
-    map.once('load', () => {
-      this.routeRendererService.renderMockRoutes(map, (route) => {
-        this.ngZone.run(() => {
-          this.routeSelected.emit(route);
-        });
+
+    this.map = map;
+  }
+
+  renderRouteFeatures(routes: MapRouteFeature[], selectActivityId?: string): void {
+    const map = this.map;
+    if (!map) {
+      return;
+    }
+
+    this.routeRendererService.renderRoutes(map, routes, (route) => {
+      this.ngZone.run(() => {
+        this.routeSelected.emit(route);
       });
     });
 
-    this.map = map;
+    if (selectActivityId) {
+      this.routeRendererService.selectRoute(map, selectActivityId);
+    }
   }
 
   ngOnDestroy(): void {

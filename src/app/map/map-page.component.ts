@@ -1,9 +1,17 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MapLibreMapComponent } from './maplibre-map.component';
-import { MOCK_ROUTES, type MockRoute } from './mock-routes';
+import { type MapRouteFeature } from './mock-routes';
+import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 
 @Component({
   selector: 'app-map-page',
@@ -110,9 +118,14 @@ import { MOCK_ROUTES, type MockRoute } from './mock-routes';
     }
   `],
 })
-export class MapPage {
+export class MapPage implements AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly repositories = inject(TRAILROAM_REPOSITORIES);
+
+  @ViewChild(MapLibreMapComponent)
+  private readonly mapComponent!: MapLibreMapComponent;
+
   private readonly activityIdParam = toSignal(
     this.route.queryParamMap.pipe(map((params) => params.get('activityId'))),
     { initialValue: null },
@@ -122,22 +135,26 @@ export class MapPage {
     { initialValue: false },
   );
   private readonly mapBasemapError = signal(false);
-  protected readonly selectedMockRoute = signal<MockRoute | null>(null);
+  private readonly allRoutes = signal<MapRouteFeature[]>([]);
+  private readonly selectedMapRoute = signal<MapRouteFeature | null>(null);
 
   protected readonly selectedActivityId = computed(() => this.activityIdParam());
   protected readonly hasBasemapError = computed(() => this.basemapErrorParam() || this.mapBasemapError());
 
-  protected readonly selectedRoute = computed<MockRoute | null>(() => {
+  protected readonly selectedRoute = computed<MapRouteFeature | null>(() => {
     const activityId = this.selectedActivityId();
     if (activityId) {
-      return MOCK_ROUTES.find((r) => r.activityId === activityId) ?? null;
+      return this.allRoutes().find((r) => r.activityId === activityId) ?? null;
     }
-    return this.selectedMockRoute();
+    return this.selectedMapRoute();
   });
 
   protected readonly noRouteActivity = computed(() => {
     const activityId = this.selectedActivityId();
-    return activityId !== null && !MOCK_ROUTES.some((r) => r.activityId === activityId);
+    if (!activityId) {
+      return false;
+    }
+    return !this.allRoutes().some((r) => r.activityId === activityId);
   });
 
   protected readonly noRouteActivityName = computed(() => {
@@ -145,17 +162,54 @@ export class MapPage {
   });
 
   constructor() {
-    this.selectFromActivityId();
+    this.loadRoutes();
   }
 
-  private selectFromActivityId(): void {
-    const activityId = this.selectedActivityId();
-    if (activityId) {
-      const route = MOCK_ROUTES.find((r) => r.activityId === activityId);
-      if (route) {
-        this.selectedMockRoute.set(route);
+  ngAfterViewInit(): void {
+    this.renderRoutesOnMap();
+  }
+
+  private async loadRoutes(): Promise<void> {
+    try {
+      const [activities, activityRoutes] = await Promise.all([
+        this.repositories.activities.list(),
+        this.repositories.activityRoutes.list(),
+      ]);
+
+      const activityRecordsById = new Map(activities.map((a) => [a.id, a]));
+
+      const routes: MapRouteFeature[] = [];
+
+      for (const routeRecord of activityRoutes) {
+        const activity = activityRecordsById.get(routeRecord.activityId);
+        if (!activity || activity.routeSyncStatus !== 'route_synced') {
+          continue;
+        }
+        routes.push({
+          activityId: routeRecord.activityId,
+          activity,
+          route: routeRecord,
+          coordinates: routeRecord.coordinates,
+          name: activity.name,
+        });
       }
+
+      this.allRoutes.set(routes);
+      this.renderRoutesOnMap();
+    } catch {
     }
+  }
+
+  private renderRoutesOnMap(): void {
+    const routes = this.allRoutes();
+    const mapComp = this.mapComponent;
+
+    if (!mapComp || routes.length === 0) {
+      return;
+    }
+
+    const selectId = this.selectedActivityId();
+    mapComp.renderRouteFeatures(routes, selectId ?? undefined);
   }
 
   protected showBasemapError(): void {
@@ -166,12 +220,12 @@ export class MapPage {
     this.mapBasemapError.set(false);
   }
 
-  protected selectRoute(route: MockRoute): void {
-    this.selectedMockRoute.set(route);
+  protected selectRoute(route: MapRouteFeature): void {
+    this.selectedMapRoute.set(route);
   }
 
   protected clearSelectedRoute(): void {
-    this.selectedMockRoute.set(null);
+    this.selectedMapRoute.set(null);
     if (this.selectedActivityId()) {
       this.router.navigate(['/map']);
     }

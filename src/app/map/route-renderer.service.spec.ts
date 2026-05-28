@@ -1,11 +1,47 @@
 import { type Map } from 'maplibre-gl';
-import { MOCK_ROUTES, type MockRoute } from './mock-routes';
+import { type MapRouteFeature } from './mock-routes';
+import type { RouteSelectedHandler } from './route-renderer.service';
 import {
-  MOCK_ROUTES_LAYER_ID,
-  MOCK_ROUTES_SELECTED_LAYER_ID,
-  MOCK_ROUTES_SOURCE_ID,
+  ROUTES_LAYER_ID,
+  ROUTES_SELECTED_LAYER_ID,
+  ROUTES_SOURCE_ID,
   RouteRendererService,
 } from './route-renderer.service';
+
+function makeMockRoute(overrides: Partial<MapRouteFeature> = {}): MapRouteFeature {
+  return {
+    activityId: 'test:1',
+    activity: {
+      id: 'test:1',
+      provider: 'strava',
+      providerActivityId: '1',
+      name: 'Test Ride',
+      sportType: 'Ride',
+      activityCategory: 'ride',
+      startDate: '2024-01-01T00:00:00Z',
+      distanceMeters: 10000,
+      movingTimeSeconds: 1800,
+      elapsedTimeSeconds: 2000,
+      hasRoute: true,
+      routeSyncStatus: 'route_synced',
+      sourceUrl: 'https://www.strava.com/activities/1',
+      importedAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    route: {
+      activityId: 'test:1',
+      providerActivityId: '1',
+      coordinates: [[19.9, 50.05], [19.91, 50.06]],
+      pointCount: 2,
+      bounds: { west: 19.9, south: 50.05, east: 19.91, north: 50.06 },
+      syncedAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    },
+    coordinates: [[19.9, 50.05], [19.91, 50.06]],
+    name: 'Test Ride',
+    ...overrides,
+  };
+}
 
 describe('RouteRendererService', () => {
   let addLayer: ReturnType<typeof vi.fn>;
@@ -13,16 +49,18 @@ describe('RouteRendererService', () => {
   let getCanvas: ReturnType<typeof vi.fn>;
   let map: Map;
   let on: ReturnType<typeof vi.fn>;
-  let routeSelected: ReturnType<typeof vi.fn<(route: MockRoute) => void>>;
+  let routeSelected: ReturnType<typeof vi.fn<RouteSelectedHandler>>;
   let setFilter: ReturnType<typeof vi.fn>;
   let service: RouteRendererService;
+
+  const mockRoutes = [makeMockRoute({ activityId: 'test:1', name: 'Route 1' }), makeMockRoute({ activityId: 'test:2', name: 'Route 2' })];
 
   beforeEach(() => {
     addLayer = vi.fn();
     addSource = vi.fn();
     getCanvas = vi.fn().mockReturnValue({ style: { cursor: '' } });
     on = vi.fn();
-    routeSelected = vi.fn<(route: MockRoute) => void>();
+    routeSelected = vi.fn<RouteSelectedHandler>();
     setFilter = vi.fn();
     map = {
       addLayer,
@@ -34,16 +72,16 @@ describe('RouteRendererService', () => {
     service = new RouteRendererService();
   });
 
-  it('should render each mock route as a separate GeoJSON feature', () => {
-    service.renderMockRoutes(map, routeSelected);
+  it('should render each route as a separate GeoJSON feature', () => {
+    service.renderRoutes(map, mockRoutes, routeSelected);
 
     expect(addSource).toHaveBeenCalledWith(
-      MOCK_ROUTES_SOURCE_ID,
+      ROUTES_SOURCE_ID,
       expect.objectContaining({
         data: expect.objectContaining({
           type: 'FeatureCollection',
           features: expect.arrayContaining(
-            MOCK_ROUTES.map((route) =>
+            mockRoutes.map((route) =>
               expect.objectContaining({
                 properties: expect.objectContaining({
                   activityId: route.activityId,
@@ -61,22 +99,22 @@ describe('RouteRendererService', () => {
       }),
     );
     const sourceDefinition = addSource.mock.calls[0][1];
-    expect(sourceDefinition.data.features).toHaveLength(MOCK_ROUTES.length);
+    expect(sourceDefinition.data.features).toHaveLength(mockRoutes.length);
   });
 
   it('should add route and selected-route layers', () => {
-    service.renderMockRoutes(map, routeSelected);
+    service.renderRoutes(map, mockRoutes, routeSelected);
 
-    expect(addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: MOCK_ROUTES_LAYER_ID }));
-    expect(addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: MOCK_ROUTES_SELECTED_LAYER_ID }));
+    expect(addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: ROUTES_LAYER_ID }));
+    expect(addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: ROUTES_SELECTED_LAYER_ID }));
   });
 
   it('should select and highlight the clicked route', () => {
-    service.renderMockRoutes(map, routeSelected);
+    service.renderRoutes(map, mockRoutes, routeSelected);
     const clickHandler = on.mock.calls.find(
-      ([eventName, layerId]) => eventName === 'click' && layerId === MOCK_ROUTES_LAYER_ID,
+      ([eventName, layerId]) => eventName === 'click' && layerId === ROUTES_LAYER_ID,
     )?.[2];
-    const route = MOCK_ROUTES[1];
+    const route = mockRoutes[1];
 
     clickHandler({
       features: [
@@ -88,7 +126,7 @@ describe('RouteRendererService', () => {
       ],
     });
 
-    expect(setFilter).toHaveBeenCalledWith(MOCK_ROUTES_SELECTED_LAYER_ID, [
+    expect(setFilter).toHaveBeenCalledWith(ROUTES_SELECTED_LAYER_ID, [
       '==',
       ['get', 'activityId'],
       route.activityId,

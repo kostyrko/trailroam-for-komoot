@@ -1,23 +1,23 @@
 import { Injectable } from '@angular/core';
-import { type FilterSpecification, type Map, type MapLayerMouseEvent } from 'maplibre-gl';
-import { MOCK_ROUTES, type MockRoute } from './mock-routes';
+import { type FilterSpecification, type Map as MapLibreMap, type MapLayerMouseEvent } from 'maplibre-gl';
+import { type MapRouteFeature } from './mock-routes';
 
-export const MOCK_ROUTES_SOURCE_ID = 'trailroam-mock-routes';
-export const MOCK_ROUTES_LAYER_ID = 'trailroam-mock-route-lines';
-export const MOCK_ROUTES_SELECTED_LAYER_ID = 'trailroam-mock-route-selected';
+export const ROUTES_SOURCE_ID = 'trailroam-routes';
+export const ROUTES_LAYER_ID = 'trailroam-route-lines';
+export const ROUTES_SELECTED_LAYER_ID = 'trailroam-route-selected';
 
-type RouteSelectedHandler = (route: MockRoute) => void;
+export type RouteSelectedHandler = (route: MapRouteFeature) => void;
 
 @Injectable({
   providedIn: 'root',
 })
 export class RouteRendererService {
-  renderMockRoutes(map: Map, routeSelected: RouteSelectedHandler): void {
-    map.addSource(MOCK_ROUTES_SOURCE_ID, {
+  renderRoutes(map: MapLibreMap, routes: MapRouteFeature[], routeSelected: RouteSelectedHandler): void {
+    map.addSource(ROUTES_SOURCE_ID, {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
-        features: MOCK_ROUTES.map((route) => ({
+        features: routes.map((route) => ({
           type: 'Feature',
           properties: {
             activityId: route.activityId,
@@ -32,9 +32,9 @@ export class RouteRendererService {
     });
 
     map.addLayer({
-      id: `${MOCK_ROUTES_LAYER_ID}-casing`,
+      id: `${ROUTES_LAYER_ID}-casing`,
       type: 'line',
-      source: MOCK_ROUTES_SOURCE_ID,
+      source: ROUTES_SOURCE_ID,
       paint: {
         'line-color': '#ffffff',
         'line-opacity': 0.9,
@@ -43,9 +43,9 @@ export class RouteRendererService {
     });
 
     map.addLayer({
-      id: MOCK_ROUTES_LAYER_ID,
+      id: ROUTES_LAYER_ID,
       type: 'line',
-      source: MOCK_ROUTES_SOURCE_ID,
+      source: ROUTES_SOURCE_ID,
       paint: {
         'line-color': '#1f6f50',
         'line-opacity': 0.9,
@@ -54,9 +54,9 @@ export class RouteRendererService {
     });
 
     map.addLayer({
-      id: MOCK_ROUTES_SELECTED_LAYER_ID,
+      id: ROUTES_SELECTED_LAYER_ID,
       type: 'line',
-      source: MOCK_ROUTES_SOURCE_ID,
+      source: ROUTES_SOURCE_ID,
       filter: this.buildSelectedRouteFilter(''),
       paint: {
         'line-color': '#d15b2f',
@@ -65,34 +65,35 @@ export class RouteRendererService {
       },
     });
 
-    map.on('click', MOCK_ROUTES_LAYER_ID, (event: MapLayerMouseEvent) => {
-      const selectedRoute = this.findRouteFromEvent(event);
+    const routesLookup = new Map(routes.map((r) => [r.activityId, r]));
 
+    map.on('click', ROUTES_LAYER_ID, (event: MapLayerMouseEvent) => {
+      const activityId = event.features?.[0]?.properties?.['activityId'];
+
+      if (typeof activityId !== 'string') {
+        return;
+      }
+
+      const selectedRoute = routesLookup.get(activityId);
       if (!selectedRoute) {
         return;
       }
 
-      map.setFilter(MOCK_ROUTES_SELECTED_LAYER_ID, this.buildSelectedRouteFilter(selectedRoute.activityId));
+      map.setFilter(ROUTES_SELECTED_LAYER_ID, this.buildSelectedRouteFilter(selectedRoute.activityId));
       routeSelected(selectedRoute);
     });
 
-    map.on('mouseenter', MOCK_ROUTES_LAYER_ID, () => {
+    map.on('mouseenter', ROUTES_LAYER_ID, () => {
       map.getCanvas().style.cursor = 'pointer';
     });
 
-    map.on('mouseleave', MOCK_ROUTES_LAYER_ID, () => {
+    map.on('mouseleave', ROUTES_LAYER_ID, () => {
       map.getCanvas().style.cursor = '';
     });
   }
 
-  private findRouteFromEvent(event: MapLayerMouseEvent): MockRoute | undefined {
-    const activityId = event.features?.[0]?.properties?.['activityId'];
-
-    if (typeof activityId !== 'string') {
-      return undefined;
-    }
-
-    return MOCK_ROUTES.find((route) => route.activityId === activityId);
+  selectRoute(map: MapLibreMap, activityId: string): void {
+    map.setFilter(ROUTES_SELECTED_LAYER_ID, this.buildSelectedRouteFilter(activityId));
   }
 
   private buildSelectedRouteFilter(activityId: string): FilterSpecification {
