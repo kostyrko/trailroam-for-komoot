@@ -1,4 +1,4 @@
-<main class="app-shell">
+<main class="app-shell" (click)="closeSyncMenu()">
   <header class="app-header">
     <div class="brand-group">
       <a class="brand" routerLink="/map">Trailroam for Strava</a>
@@ -19,17 +19,57 @@
           {{ statusLabel }}
         }
       </span>
-      <button
-        class="sync-menu-trigger"
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded="false"
-        [disabled]="!canSync"
-        (click)="checkSession()"
-      >
-        Sync new activities
-        <span aria-hidden="true">v</span>
-      </button>
+
+      <div class="sync-menu-wrapper" (click)="$event.stopPropagation()">
+        <button
+          class="sync-menu-trigger"
+          type="button"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="syncMenuOpen()"
+          [disabled]="!canSync"
+          (click)="toggleSyncMenu()"
+        >
+          Sync
+          <span aria-hidden="true">v</span>
+        </button>
+
+        @if (syncMenuOpen()) {
+          <ul class="sync-dropdown" role="menu" aria-label="Sync and data management">
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="syncNewActivities()">
+                Sync new activities
+              </button>
+            </li>
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="syncMissingRoutes()">
+                Sync missing routes
+              </button>
+            </li>
+            <li role="none" class="dropdown-divider" aria-hidden="true"></li>
+            <li role="none">
+              <button class="dropdown-item dropdown-item-danger" role="menuitem" (click)="clearAndResync()">
+                Clear and re-sync
+              </button>
+            </li>
+            <li role="none">
+              <button class="dropdown-item dropdown-item-danger" role="menuitem" (click)="clearSyncedLocalData()">
+                Clear synced local data
+              </button>
+            </li>
+            <li role="none" class="dropdown-divider" aria-hidden="true"></li>
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="backupLocalData()">
+                Backup local data
+              </button>
+            </li>
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="restoreLocalData()">
+                Restore local data
+              </button>
+            </li>
+          </ul>
+        }
+      </div>
     </div>
   </header>
 

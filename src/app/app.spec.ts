@@ -70,7 +70,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('.brand')?.textContent).toContain('Trailroam for Strava');
     expect(compiled.querySelector('.header-actions')).toBeTruthy();
-    expect(syncButton?.textContent).toContain('Sync new activities');
+    expect(syncButton?.textContent).toContain('Sync');
     expect(syncButton?.getAttribute('aria-haspopup')).toBe('menu');
   });
 
@@ -475,8 +475,9 @@ describe('SettingsPage', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.danger-state')?.textContent).toContain('Clear synced local data');
-    expect(compiled.querySelector('.danger-state')?.textContent).toContain('Settings and access state are kept');
+    const clearDataArticle = compiled.querySelector('[aria-labelledby="clear-local-data-title"]');
+    expect(clearDataArticle?.textContent).toContain('Clear synced local data');
+    expect(clearDataArticle?.textContent).toContain('Settings and access state are kept');
   });
 
   it('should ask for confirmation before clearing synced local data', async () => {
@@ -486,7 +487,9 @@ describe('SettingsPage', () => {
 
     const fixture = TestBed.createComponent(SettingsPage);
     fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.danger-action')?.click();
+    const buttons = fixture.nativeElement.querySelectorAll('.danger-action') as unknown as HTMLButtonElement[];
+    const clearButton = Array.from(buttons).find((b) => b.textContent?.includes('Clear synced local data'));
+    clearButton?.click();
     await fixture.whenStable();
 
     expect(confirm).toHaveBeenCalledWith(
@@ -502,7 +505,9 @@ describe('SettingsPage', () => {
 
     const fixture = TestBed.createComponent(SettingsPage);
     fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.danger-action')?.click();
+    const buttons = fixture.nativeElement.querySelectorAll('.danger-action') as unknown as HTMLButtonElement[];
+    const clearButton = Array.from(buttons).find((b) => b.textContent?.includes('Clear synced local data'));
+    clearButton?.click();
     await fixture.whenStable();
     fixture.detectChanges();
 
