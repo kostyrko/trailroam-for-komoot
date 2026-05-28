@@ -13,6 +13,27 @@ import { MapLibreMapComponent } from './maplibre-map.component';
 import { type MapRouteFeature } from './mock-routes';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 
+function formatDistance(meters: number | undefined): string {
+  if (meters === undefined || meters === 0) { return '—'; }
+  const km = meters / 1000;
+  if (km >= 100) { return `${km.toFixed(0)} km`; }
+  if (km >= 10) { return `${km.toFixed(1)} km`; }
+  return `${km.toFixed(2)} km`;
+}
+
+function formatDuration(seconds: number | undefined): string {
+  if (seconds === undefined || seconds === 0) { return '—'; }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) { return `${h}h ${m}m`; }
+  return `${m}m`;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 @Component({
   selector: 'app-map-page',
   imports: [MapLibreMapComponent],
@@ -56,7 +77,28 @@ import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.tok
               Close
             </button>
           </div>
-          <p class="route-detail-coords">{{ route.coordinates.length }} GPS points</p>
+          <dl class="route-detail-stats">
+            <div class="stat">
+              <dt class="stat-label">Date</dt>
+              <dd class="stat-value">{{ formatDate(route.activity.startDate) }}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Type</dt>
+              <dd class="stat-value category-tag">{{ route.activity.activityCategory }}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Distance</dt>
+              <dd class="stat-value">{{ formatDistance(route.activity.distanceMeters) }}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Moving time</dt>
+              <dd class="stat-value">{{ formatDuration(route.activity.movingTimeSeconds) }}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">GPS points</dt>
+              <dd class="stat-value">{{ route.coordinates.length }}</dd>
+            </div>
+          </dl>
         </article>
       }
 
@@ -111,10 +153,41 @@ import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.tok
       background: #eef5f0;
     }
 
-    .route-detail-coords {
+    .route-detail-stats {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+      margin: 16px 0 0;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-label {
       color: #63746a;
-      font-size: 0.8125rem;
-      margin: 12px 0 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      color: #14211b;
+      font-size: 0.9375rem;
+      font-weight: 600;
+    }
+
+    .category-tag {
+      background: #eef5f0;
+      border-radius: 4px;
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 7px;
+      text-transform: capitalize;
     }
   `],
 })
@@ -211,6 +284,10 @@ export class MapPage implements AfterViewInit {
     const selectId = this.selectedActivityId();
     mapComp.renderRouteFeatures(routes, selectId ?? undefined);
   }
+
+  protected formatDistance = formatDistance;
+  protected formatDuration = formatDuration;
+  protected formatDate = formatDate;
 
   protected showBasemapError(): void {
     this.mapBasemapError.set(true);
