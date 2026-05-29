@@ -13,8 +13,8 @@ async function fetchActivityList(page, perPage) {
   if (!response.ok) return null;
   try {
     var data = await response.json();
-    if (data && Array.isArray(data.models)) return data.models;
-    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.models)) return data;
+    if (Array.isArray(data)) return { models: data };
     return null;
   } catch { return null; }
 }
@@ -32,16 +32,17 @@ async function runSync() {
 
   try {
     var page = 1;
-    var perPage = 100;
+    var perPage = 20;
     var rawActivities = [];
-    var hasMore = true;
+    var total = Infinity;
 
-    while (hasMore) {
-      var activities = await fetchActivityList(page, perPage);
-      if (!activities || activities.length === 0) break;
-      rawActivities = rawActivities.concat(activities);
-      hasMore = activities.length === perPage;
+    while (rawActivities.length < total) {
+      var result = await fetchActivityList(page, perPage);
+      if (!result || !Array.isArray(result.models) || result.models.length === 0) break;
+      rawActivities = rawActivities.concat(result.models);
+      if (result.total !== undefined) total = result.total;
       page++;
+      setStatus('Fetching your activities from Strava (' + rawActivities.length + '/' + total + ')...');
     }
 
     log('Fetched ' + rawActivities.length + ' activities from Strava');

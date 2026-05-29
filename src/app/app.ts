@@ -4,6 +4,8 @@ import { SyncSummaryService, type SyncSummary } from './storage/sync-summary.ser
 import { LocalDataService } from './storage/local-data.service';
 import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.token';
 import { StravaActivityNormalizer } from './strava/strava-activity-normalizer';
+import { StravaSessionService } from './strava/strava-session.service';
+import { StravaRouteNormalizer } from './strava/strava-route-normalizer';
 import type { StravaActivityResponse } from './strava/strava-session.service';
 
 @Component({
@@ -17,6 +19,8 @@ export class App {
   private readonly localDataService = inject(LocalDataService);
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
   private readonly activityNormalizer = inject(StravaActivityNormalizer);
+  private readonly stravaSessionService = inject(StravaSessionService);
+  private readonly routeNormalizer = inject(StravaRouteNormalizer);
 
   private pendingRouteCount = 0;
   private totalRouteCount = 0;
@@ -133,6 +137,7 @@ export class App {
     const allRoutesDone = this.totalRouteCount > 0 && this.pendingRouteCount >= this.totalRouteCount;
 
     if (allRoutesDone || rawActivities.length > 0) {
+      const attempts = await this.retryMissingRoutes();
       await this.repositories.syncState.put({
         id: 'default',
         status: 'completed',
@@ -141,11 +146,42 @@ export class App {
         startedAt: now,
         importedCount: this.runningStoreCount.activities,
         updatedCount: 0,
-        routesSyncedCount: this.runningStoreCount.routes,
-        skippedCount: this.runningStoreCount.noRoutes,
-        failedCount: 0,
+        routesSyncedCount: this.runningStoreCount.routes + attempts.synced,
+        skippedCount: this.runningStoreCount.noRoutes + attempts.skipped,
+        failedCount: attempts.failed,
       });
     }
+  }
+
+  private async retryMissingRoutes(): Promise<{ synced: number; skipped: number; failed: number }> {
+    const result = { synced: 0, skipped: 0, failed: 0 };
+    const activities = await this.repositories.activities.list();
+    const needing = activities.filter((a) => a.routeSyncStatus === 'not_attempted' || a.routeSyncStatus === 'route_failed');
+    if (needing.length === 0) return result;
+    const CONCURRENCY = 3;
+    for (let i = 0; i < needing.length; i += CONCURRENCY) {
+      const batch = needing.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async (a) => {
+        const fetchResult = await this.stravaSessionService.fetchActivityRoute(Number(a.providerActivityId));
+        if (fetchResult.success) {
+          const normalized = this.routeNormalizer.normalize(a.id, a.providerActivityId, fetchResult);
+          if (normalized.success) {
+            await this.repositories.activityRoutes.upsert(normalized.route);
+            await this.repositories.activities.updateRouteSyncStatus(a.id, true, 'route_synced');
+            result.synced++;
+          } else {
+            const status = normalized.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
+            await this.repositories.activities.updateRouteSyncStatus(a.id, false, status);
+            result.skipped++;
+          }
+        } else {
+          const status = fetchResult.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
+          await this.repositories.activities.updateRouteSyncStatus(a.id, false, status);
+          result.skipped++;
+        }
+      }));
+    }
+    return result;
   }
 
   protected toggleSyncMenu(): void {

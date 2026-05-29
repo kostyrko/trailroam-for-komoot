@@ -63,22 +63,32 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     });
 
     this.map = map;
+
+    if (this.pendingRoutes) {
+      this.renderRouteFeatures(this.pendingRoutes, this.pendingSelectId);
+      this.pendingRoutes = null;
+      this.pendingSelectId = undefined;
+    }
   }
 
+  private pendingRoutes: MapRouteFeature[] | null = null;
+  private pendingSelectId: string | undefined;
+
   renderRouteFeatures(routes: MapRouteFeature[], selectActivityId?: string): void {
-    const map = this.map;
-    if (!map) {
+    if (!this.map) {
+      this.pendingRoutes = routes;
+      this.pendingSelectId = selectActivityId;
       return;
     }
 
-    this.routeRendererService.renderRoutes(map, routes, (route) => {
+    this.routeRendererService.renderRoutes(this.map, routes, (route) => {
       this.ngZone.run(() => {
         this.routeSelected.emit(route);
       });
     });
 
     if (selectActivityId) {
-      this.routeRendererService.selectRoute(map, selectActivityId);
+      this.routeRendererService.selectRoute(this.map, selectActivityId);
     }
   }
 

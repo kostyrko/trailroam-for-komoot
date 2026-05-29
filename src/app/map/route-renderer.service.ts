@@ -12,23 +12,27 @@ export type RouteSelectedHandler = (route: MapRouteFeature) => void;
   providedIn: 'root',
 })
 export class RouteRendererService {
+  private initialized = false;
+
   renderRoutes(map: MapLibreMap, routes: MapRouteFeature[], routeSelected: RouteSelectedHandler): void {
+    const features = routes.map((route) => ({
+      type: 'Feature' as const,
+      properties: { activityId: route.activityId, name: route.name },
+      geometry: { type: 'LineString' as const, coordinates: route.coordinates },
+    }));
+
+    if (this.initialized) {
+      const source = map.getSource(ROUTES_SOURCE_ID) as any;
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features });
+      }
+      return;
+    }
+    this.initialized = true;
+
     map.addSource(ROUTES_SOURCE_ID, {
       type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: routes.map((route) => ({
-          type: 'Feature',
-          properties: {
-            activityId: route.activityId,
-            name: route.name,
-          },
-          geometry: {
-            type: 'LineString',
-            coordinates: route.coordinates,
-          },
-        })),
-      },
+      data: { type: 'FeatureCollection', features },
     });
 
     map.addLayer({
