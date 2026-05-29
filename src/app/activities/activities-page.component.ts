@@ -11,6 +11,27 @@ function formatDistance(meters: number | undefined): string {
   return `${(meters / 1000).toFixed(2)} km`;
 }
 
+function formatElevation(meters: number | undefined): string {
+  if (meters === undefined || meters === 0) { return '—'; }
+  return `${meters.toFixed(0)} m`;
+}
+
+function computeSpeed(metersPerSecond: number | undefined, distanceMeters: number | undefined, movingTimeSeconds: number | undefined): number | undefined {
+  if (metersPerSecond !== undefined && metersPerSecond !== 0) { return metersPerSecond; }
+  if (distanceMeters && movingTimeSeconds) { return distanceMeters / movingTimeSeconds; }
+  return undefined;
+}
+
+function formatSpeed(metersPerSecond: number | undefined): string {
+  if (metersPerSecond === undefined || metersPerSecond === 0) { return '—'; }
+  return `${(metersPerSecond * 3.6).toFixed(1)} km/h`;
+}
+
+function formatHeartrate(bpm: number | undefined): string {
+  if (bpm === undefined || bpm === 0) { return '—'; }
+  return `${bpm.toFixed(0)} bpm`;
+}
+
 function formatDuration(seconds: number | undefined): string {
   if (seconds === undefined || seconds === 0) { return '—'; }
   const h = Math.floor(seconds / 3600);
@@ -127,6 +148,7 @@ function routeStatusLabel(status: string): string {
                 <th scope="col">Name</th>
                 <th scope="col">Type</th>
                 <th scope="col">Distance</th>
+                <th scope="col">Speed</th>
                 <th scope="col">Time</th>
                 <th scope="col">Route</th>
               </tr>
@@ -142,6 +164,7 @@ function routeStatusLabel(status: string): string {
                         <span class="preview-line">{{ formatDate(activity.startDate) }}</span>
                         <span class="preview-line"><strong>{{ activity.name }}</strong></span>
                         <span class="preview-line">{{ activity.activityCategory }} · {{ formatDistance(activity.distanceMeters) }}</span>
+                        <span class="preview-line">Avg speed: {{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</span>
                         <span class="preview-line">Moving time: {{ formatDuration(activity.movingTimeSeconds) }}</span>
                         <span class="preview-line">Route: {{ routeStatusLabel(activity.routeSyncStatus) }}</span>
                       </span>
@@ -149,6 +172,7 @@ function routeStatusLabel(status: string): string {
                   </td>
                   <td><span class="category-tag">{{ activity.activityCategory }}</span></td>
                   <td class="cell-num">{{ formatDistance(activity.distanceMeters) }}</td>
+                  <td class="cell-num">{{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</td>
                   <td class="cell-num">{{ formatDuration(activity.movingTimeSeconds) }}</td>
                   <td>
                     <span class="route-badge" [class.route-ok]="activity.routeSyncStatus === 'route_synced'"
@@ -458,7 +482,9 @@ export class ActivitiesPageComponent {
     }
   }
 
+  protected computeSpeed = computeSpeed;
   protected formatDistance = formatDistance;
+  protected formatSpeed = formatSpeed;
   protected formatDuration = formatDuration;
   protected formatDate = formatDate;
   protected routeStatusLabel = routeStatusLabel;

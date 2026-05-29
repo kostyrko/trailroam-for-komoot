@@ -12,6 +12,9 @@ export interface StravaActivityResponse {
   distance: number;
   moving_time: number;
   elapsed_time: number;
+  total_elevation_gain?: number;
+  average_speed?: number;
+  average_heartrate?: number;
   has_heartrate?: boolean;
   /** @deprecated Use sport_type instead */
   type?: string;

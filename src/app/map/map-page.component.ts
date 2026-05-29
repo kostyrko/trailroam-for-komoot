@@ -19,6 +19,27 @@ function formatDistance(meters: number | undefined): string {
   return `${(meters / 1000).toFixed(2)} km`;
 }
 
+function formatElevation(meters: number | undefined): string {
+  if (meters === undefined || meters === 0) { return '—'; }
+  return `${meters.toFixed(0)} m`;
+}
+
+function computeSpeed(metersPerSecond: number | undefined, distanceMeters: number | undefined, movingTimeSeconds: number | undefined): number | undefined {
+  if (metersPerSecond !== undefined && metersPerSecond !== 0) { return metersPerSecond; }
+  if (distanceMeters && movingTimeSeconds) { return distanceMeters / movingTimeSeconds; }
+  return undefined;
+}
+
+function formatSpeed(metersPerSecond: number | undefined): string {
+  if (metersPerSecond === undefined || metersPerSecond === 0) { return '—'; }
+  return `${(metersPerSecond * 3.6).toFixed(1)} km/h`;
+}
+
+function formatHeartrate(bpm: number | undefined): string {
+  if (bpm === undefined || bpm === 0) { return '—'; }
+  return `${bpm.toFixed(0)} bpm`;
+}
+
 function formatDuration(seconds: number | undefined): string {
   if (seconds === undefined || seconds === 0) { return '—'; }
   const h = Math.floor(seconds / 3600);
@@ -147,6 +168,10 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
             <div class="stat">
               <dt class="stat-label">Distance</dt>
               <dd class="stat-value">{{ formatDistance(route.activity.distanceMeters) }}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Speed</dt>
+              <dd class="stat-value">{{ formatSpeed(computeSpeed(route.activity.averageSpeedMetersPerSecond, route.activity.distanceMeters, route.activity.movingTimeSeconds)) }}</dd>
             </div>
             <div class="stat">
               <dt class="stat-label">Moving time</dt>
@@ -438,7 +463,9 @@ export class MapPage implements AfterViewInit {
     mapComp.renderRouteFeatures(routes, selectId ?? undefined);
   }
 
+  protected computeSpeed = computeSpeed;
   protected formatDistance = formatDistance;
+  protected formatSpeed = formatSpeed;
   protected formatDuration = formatDuration;
   protected formatDate = formatDate;
   protected formatDateInput = formatDateInput;

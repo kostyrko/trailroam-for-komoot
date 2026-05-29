@@ -20,6 +20,7 @@ describe('StravaActivityNormalizer', () => {
       distance: 42000,
       moving_time: 7200,
       elapsed_time: 7500,
+      total_elevation_gain: 350,
       ...overrides,
     };
   }
@@ -57,6 +58,19 @@ describe('StravaActivityNormalizer', () => {
 
     expect(record.sportType).toBe('Unknown');
     expect(record.activityCategory).toBe('other');
+  });
+
+  it('should copy elevation gain', () => {
+    const record = normalizer.normalize(createRaw({ total_elevation_gain: 350 }));
+
+    expect(record.totalElevationGainMeters).toBe(350);
+  });
+
+  it('should copy average_speed and average_heartrate', () => {
+    const record = normalizer.normalize(createRaw({ average_speed: 8.5, average_heartrate: 145 }));
+
+    expect(record.averageSpeedMetersPerSecond).toBe(8.5);
+    expect(record.averageHeartrateBpm).toBe(145);
   });
 
   it('should copy distance, moving_time, elapsed_time', () => {

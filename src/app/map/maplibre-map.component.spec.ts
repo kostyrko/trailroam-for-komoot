@@ -21,6 +21,7 @@ function makeMockRoute(overrides: Partial<MapRouteFeature> = {}): MapRouteFeatur
       distanceMeters: 10000,
       movingTimeSeconds: 1800,
       elapsedTimeSeconds: 2000,
+      totalElevationGainMeters: 350,
       hasRoute: true,
       routeSyncStatus: 'route_synced',
       sourceUrl: 'https://www.strava.com/activities/1',
