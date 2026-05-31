@@ -7,6 +7,9 @@ const ALLOWED_TILE_HOSTS = [
   'tiles.openfreemap.org',
 ];
 
+const DEFAULT_CENTER: [number, number] = [19.94498, 50.06465];
+const DEFAULT_ZOOM = 10;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -14,11 +17,13 @@ export class MapLibreService {
   async createMap(container: HTMLElement, basemapProvider: ResolvedBasemapProvider): Promise<Map> {
     const { default: maplibregl } = await import('maplibre-gl');
 
+    const center = await this.getBrowserLocation();
+
     const map = new maplibregl.Map({
       container,
       style: basemapProvider.style,
-      center: [19.94498, 50.06465],
-      zoom: 10,
+      center,
+      zoom: center === DEFAULT_CENTER ? DEFAULT_ZOOM : 12,
       transformRequest: (url, resourceType) => {
         if (
           resourceType !== undefined &&
@@ -34,5 +39,22 @@ export class MapLibreService {
     });
 
     return map;
+  }
+
+  private async getBrowserLocation(): Promise<[number, number]> {
+    if (!navigator.geolocation) {
+      return DEFAULT_CENTER;
+    }
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 5000,
+          maximumAge: 300000,
+        });
+      });
+      return [pos.coords.longitude, pos.coords.latitude];
+    } catch {
+      return DEFAULT_CENTER;
+    }
   }
 }

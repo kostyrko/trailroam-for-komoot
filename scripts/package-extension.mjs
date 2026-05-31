@@ -18,6 +18,7 @@ const nestedAppIndex = rootIndex
   .replaceAll('href="styles-', 'href="../styles-')
   .replaceAll('href="chunk-', 'href="../chunk-')
   .replaceAll('src="main-', 'src="../main-')
+  .replace(/<base\s[^>]*>/, '')
   .replace('<html lang="en">', `<html lang="en" data-build="${buildDate}">`);
 
 await writeFile(appIndexPath, nestedAppIndex);
