@@ -6,6 +6,7 @@ import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.toke
 import { StravaActivityNormalizer } from './strava/strava-activity-normalizer';
 import { StravaSessionService } from './strava/strava-session.service';
 import { StravaRouteNormalizer } from './strava/strava-route-normalizer';
+import { SyncEngineService, type SyncNewResult } from './sync/sync-engine.service';
 import type { StravaActivityResponse } from './strava/strava-session.service';
 
 @Component({
@@ -21,6 +22,7 @@ export class App {
   private readonly activityNormalizer = inject(StravaActivityNormalizer);
   private readonly stravaSessionService = inject(StravaSessionService);
   private readonly routeNormalizer = inject(StravaRouteNormalizer);
+  private readonly syncEngine = inject(SyncEngineService);
 
   private pendingRouteCount = 0;
   private totalRouteCount = 0;
@@ -196,6 +198,12 @@ export class App {
     this.syncSummary.set(null);
   }
 
+  private async showSyncResult(result: SyncNewResult): Promise<void> {
+    await this.syncSummaryService.updateFromResult(result);
+    const summary = await this.syncSummaryService.getSummary();
+    this.syncSummary.set(summary);
+  }
+
   protected syncNewActivities(): void {
     this.closeSyncMenu();
     const c = (globalThis as any).chrome;
@@ -206,6 +214,11 @@ export class App {
 
   protected syncMissingRoutes(): void {
     this.closeSyncMenu();
+    const startSync = async () => {
+      const result = await this.syncEngine.syncMissingRoutes();
+      this.showSyncResult(result);
+    };
+    startSync();
   }
 
   protected async clearAndResync(): Promise<void> {

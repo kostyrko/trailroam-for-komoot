@@ -50,6 +50,38 @@ export class SyncEngineService {
     this.cancelled = true;
   }
 
+  async syncMissingRoutes(): Promise<SyncNewResult> {
+    this.cancelled = false;
+
+    const result: SyncNewResult = {
+      importedCount: 0,
+      updatedCount: 0,
+      routesSyncedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      rateLimitedCount: 0,
+    };
+
+    try {
+      const sessionStatus = await this.stravaSessionService.checkSession();
+      if (sessionStatus !== 'logged_in') {
+        return { ...result, errorMessage: 'Strava login required' };
+      }
+
+      await this.syncRoutesWithBackoff(result);
+
+      await this.saveSyncState(result, 'completed');
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown sync error';
+      result.errorMessage = message;
+      result.failedCount += 1;
+      await this.saveSyncState(result, 'failed');
+      this.progress.set({ status: 'failed', phase: 'failed', fetchedActivities: 0, totalActivities: 0, syncedRoutes: 0, totalRoutes: 0, errorMessage: message });
+      return result;
+    }
+  }
+
   async syncNewActivities(): Promise<SyncNewResult> {
     this.cancelled = false;
 

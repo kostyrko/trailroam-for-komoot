@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { TRAILROAM_REPOSITORIES } from './repositories/repositories.token';
+import type { SyncNewResult } from '../sync/sync-engine.service';
 
 export interface SyncSummary {
   importedCount: number;
@@ -21,6 +22,26 @@ export interface SyncSummary {
 })
 export class SyncSummaryService {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
+
+  async updateFromResult(result: SyncNewResult): Promise<void> {
+    const now = new Date().toISOString();
+    await this.repositories.syncState.put({
+      id: 'default',
+      status: 'completed',
+      completedAt: now,
+      lastSuccessfulSyncAt: now,
+      lastActivityFetchAt: now,
+      importedCount: result.importedCount,
+      updatedCount: result.updatedCount,
+      routesSyncedCount: result.routesSyncedCount,
+      skippedCount: result.skippedCount,
+      failedCount: result.failedCount,
+      rateLimitedCount: result.rateLimitedCount,
+      startedAt: now,
+      lastErrorCode: result.errorMessage ? 'SYNC_ERROR' : undefined,
+      lastErrorMessage: result.errorMessage,
+    });
+  }
 
   async getSummary(): Promise<SyncSummary> {
     const syncState = await this.repositories.syncState.get();
