@@ -12,6 +12,17 @@ export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
   'other',
 ];
 
+export const CATEGORY_COLORS: Record<string, string> = {
+  ride: '#1f6f50',
+  run: '#2d7fb8',
+  walk: '#b87a2d',
+  hike: '#8b5e3c',
+  water: '#3c9bb8',
+  paddling: '#3ca8a8',
+  winter: '#8ba8c8',
+  other: '#63746a',
+};
+
 function parseDateParam(value: string | undefined | null): string | null {
   if (!value) { return null; }
   const d = new Date(value);

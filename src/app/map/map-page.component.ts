@@ -12,7 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MapLibreMapComponent } from './maplibre-map.component';
 import { type MapRouteFeature } from './mock-routes';
-import { FiltersService, ACTIVITY_CATEGORIES, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
+import { FiltersService, ACTIVITY_CATEGORIES, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 
 function formatDistance(meters: number | undefined): string {
@@ -73,22 +73,32 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       <h1 id="map-title">Map</h1>
 
       <div class="map-filters">
-        <label class="filter-group">
+        <div class="filter-group">
           <span class="filter-label">Activity type</span>
-          <select
-            class="filter-select"
-            [value]="filtersService.categoryFilter() ?? ''"
-            (change)="onCategoryChange($any($event.target).value)"
-          >
-            <option value="">All types</option>
-            @for (cat of ACTIVITY_CATEGORIES; track cat) {
-              <option [value]="cat">{{ cat }}</option>
+          <div class="custom-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()">
+            <span class="custom-select-trigger">
+              @if (filtersService.categoryFilter(); as sel) {
+                <span class="cat-dot" [style.background]="CATEGORY_COLORS[sel]"></span>{{ sel }}
+              } @else {
+                All types
+              }
+              <span class="select-arrow">▾</span>
+            </span>
+            @if (filterMenuOpen()) {
+              <ul class="custom-select-options" (mousedown)="$event.preventDefault()">
+                <li role="option" (click)="onCategoryChange('')" [class.active]="!filtersService.categoryFilter()">All types</li>
+                @for (cat of ACTIVITY_CATEGORIES; track cat) {
+                  <li role="option" (click)="onCategoryChange(cat)" [class.active]="filtersService.categoryFilter() === cat">
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[cat]"></span>{{ cat }}
+                  </li>
+                }
+              </ul>
             }
-          </select>
+          </div>
           @if (filtersService.categoryFilter()) {
             <button class="filter-clear" type="button" (click)="onCategoryChange('')">Clear</button>
           }
-        </label>
+        </div>
         <label class="filter-group">
           <span class="filter-label">From</span>
           <input
@@ -288,6 +298,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       align-items: center;
       display: flex;
       gap: 8px;
+      position: relative;
     }
 
     .filter-label {
@@ -296,15 +307,67 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       font-weight: 700;
     }
 
-    .filter-select {
+    .custom-select {
+      cursor: pointer;
+      font-size: 0.875rem;
+      min-height: 36px;
+      outline: none;
+      position: relative;
+      user-select: none;
+    }
+
+    .custom-select-trigger {
+      align-items: center;
       background: #ffffff;
       border: 1px solid #dce6df;
       border-radius: 6px;
       color: #14211b;
-      font: inherit;
-      font-size: 0.875rem;
+      display: inline-flex;
+      gap: 6px;
       min-height: 36px;
       padding: 6px 10px;
+    }
+
+    .select-arrow {
+      color: #a0b4a6;
+      font-size: 0.75rem;
+      margin-left: 4px;
+    }
+
+    .custom-select-options {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgb(20 33 27 / 15%);
+      left: 0;
+      list-style: none;
+      margin: 0;
+      min-width: 100%;
+      padding: 4px 0;
+      position: absolute;
+      top: 100%;
+      z-index: 20;
+    }
+
+    .custom-select-options li {
+      align-items: center;
+      cursor: pointer;
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    .custom-select-options li:hover,
+    .custom-select-options li.active {
+      background: #eef5f0;
+    }
+
+    .cat-dot {
+      border-radius: 50%;
+      display: inline-block;
+      height: 8px;
+      width: 8px;
     }
 
     .filter-clear {
@@ -342,6 +405,7 @@ export class MapPage implements AfterViewInit {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
   protected readonly filtersService = inject(FiltersService);
   protected readonly ACTIVITY_CATEGORIES = ACTIVITY_CATEGORIES;
+  protected readonly CATEGORY_COLORS = CATEGORY_COLORS;
 
   @ViewChild(MapLibreMapComponent)
   private readonly mapComponent!: MapLibreMapComponent;
@@ -357,6 +421,7 @@ export class MapPage implements AfterViewInit {
   private readonly mapBasemapError = signal(false);
   private readonly allRoutes = signal<MapRouteFeature[]>([]);
   private readonly selectedMapRoute = signal<MapRouteFeature | null>(null);
+  protected readonly filterMenuOpen = signal(false);
 
   protected readonly filteredRoutes = computed(() => {
     const routes = this.allRoutes();
@@ -402,6 +467,15 @@ export class MapPage implements AfterViewInit {
 
   protected onCategoryChange(value: string): void {
     this.filtersService.categoryFilter.set(value === '' ? null : (value as any));
+    this.filterMenuOpen.set(false);
+  }
+
+  protected toggleFilterMenu(): void {
+    this.filterMenuOpen.update((v) => !v);
+  }
+
+  protected closeFilterMenu(): void {
+    this.filterMenuOpen.set(false);
   }
 
   protected readonly noRouteActivity = computed(() => {

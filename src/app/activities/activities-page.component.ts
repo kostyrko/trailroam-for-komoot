@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
-import { FiltersService, ACTIVITY_CATEGORIES, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
+import { FiltersService, ACTIVITY_CATEGORIES, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import type { ActivityRecord } from '../storage/storage.models';
 
 const PAGE_SIZE = 50;
@@ -104,22 +104,32 @@ function routeStatusLabel(status: string): string {
       } @else if (activities(); as items) {
         <div class="activities-filters">
           <div class="filter-row">
-            <label class="filter-group">
+            <div class="filter-group">
               <span class="filter-label">Activity type</span>
-              <select
-                class="filter-select"
-                [value]="categoryFilter() ?? ''"
-                (change)="onCategoryChange($any($event.target).value)"
-              >
-                <option value="">All types</option>
-                @for (cat of ACTIVITY_CATEGORIES; track cat) {
-                  <option [value]="cat">{{ cat }}</option>
+              <div class="custom-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()">
+                <span class="custom-select-trigger">
+                  @if (categoryFilter(); as sel) {
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[sel]"></span>{{ sel }}
+                  } @else {
+                    All types
+                  }
+                  <span class="select-arrow">▾</span>
+                </span>
+                @if (filterMenuOpen()) {
+                  <ul class="custom-select-options" (mousedown)="$event.preventDefault()">
+                    <li role="option" (click)="onCategoryChange('')" [class.active]="!categoryFilter()">All types</li>
+                    @for (cat of ACTIVITY_CATEGORIES; track cat) {
+                      <li role="option" (click)="onCategoryChange(cat)" [class.active]="categoryFilter() === cat">
+                        <span class="cat-dot" [style.background]="CATEGORY_COLORS[cat]"></span>{{ cat }}
+                      </li>
+                    }
+                  </ul>
                 }
-              </select>
+              </div>
               @if (categoryFilter()) {
                 <button class="filter-clear" type="button" (click)="onCategoryChange('')">Clear</button>
               }
-            </label>
+            </div>
           </div>
           <div class="filter-row">
             <label class="filter-group">
@@ -185,7 +195,7 @@ function routeStatusLabel(status: string): string {
                       </span>
                     </span>
                   </td>
-                  <td><span class="category-tag">{{ activity.activityCategory }}</span></td>
+                  <td><span class="category-tag"><span class="cat-dot" [style.background]="CATEGORY_COLORS[activity.activityCategory]"></span>{{ activity.activityCategory }}</span></td>
                   <td class="cell-num">{{ formatDistance(activity.distanceMeters) }}</td>
                   <td class="cell-num">{{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</td>
                   <td class="cell-num">{{ formatDuration(activity.movingTimeSeconds) }}</td>
@@ -295,14 +305,24 @@ function routeStatusLabel(status: string): string {
     }
 
     .category-tag {
+      align-items: center;
       background: #eef5f0;
       border-radius: 4px;
       color: #314b3f;
+      display: inline-flex;
       font-size: 0.75rem;
       font-weight: 700;
+      gap: 4px;
       padding: 3px 7px;
       text-transform: capitalize;
       white-space: nowrap;
+    }
+
+    .cat-dot {
+      border-radius: 50%;
+      display: inline-block;
+      height: 8px;
+      width: 8px;
     }
 
     .route-badge {
@@ -396,6 +416,7 @@ function routeStatusLabel(status: string): string {
       align-items: center;
       display: flex;
       gap: 8px;
+      position: relative;
     }
 
     .filter-label {
@@ -404,15 +425,60 @@ function routeStatusLabel(status: string): string {
       font-weight: 700;
     }
 
-    .filter-select {
+    .custom-select {
+      cursor: pointer;
+      font-size: 0.875rem;
+      min-height: 36px;
+      outline: none;
+      position: relative;
+      user-select: none;
+    }
+
+    .custom-select-trigger {
+      align-items: center;
       background: #ffffff;
       border: 1px solid #dce6df;
       border-radius: 6px;
       color: #14211b;
-      font: inherit;
-      font-size: 0.875rem;
+      display: inline-flex;
+      gap: 6px;
       min-height: 36px;
       padding: 6px 10px;
+    }
+
+    .select-arrow {
+      color: #a0b4a6;
+      font-size: 0.75rem;
+      margin-left: 4px;
+    }
+
+    .custom-select-options {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgb(20 33 27 / 15%);
+      left: 0;
+      list-style: none;
+      margin: 0;
+      min-width: 100%;
+      padding: 4px 0;
+      position: absolute;
+      top: 100%;
+      z-index: 20;
+    }
+
+    .custom-select-options li {
+      align-items: center;
+      cursor: pointer;
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    .custom-select-options li:hover,
+    .custom-select-options li.active {
+      background: #eef5f0;
     }
 
     .filter-clear {
@@ -464,8 +530,10 @@ export class ActivitiesPageComponent {
   protected readonly totalCount = signal(0);
   protected readonly PAGE_SIZE = PAGE_SIZE;
   protected readonly ACTIVITY_CATEGORIES = ACTIVITY_CATEGORIES;
+  protected readonly CATEGORY_COLORS = CATEGORY_COLORS;
   protected readonly sortColumn = signal<SortColumn>('date');
   protected readonly sortDirection = signal<-1 | 1>(-1);
+  protected readonly filterMenuOpen = signal(false);
 
   private readonly filtersService = inject(FiltersService);
   protected readonly categoryFilter = this.filtersService.categoryFilter;
@@ -509,6 +577,15 @@ export class ActivitiesPageComponent {
 
   protected onCategoryChange(value: string): void {
     this.categoryFilter.set(value === '' ? null : (value as any));
+    this.filterMenuOpen.set(false);
+  }
+
+  protected toggleFilterMenu(): void {
+    this.filterMenuOpen.update((v) => !v);
+  }
+
+  protected closeFilterMenu(): void {
+    this.filterMenuOpen.set(false);
   }
 
   protected onSort(column: SortColumn): void {

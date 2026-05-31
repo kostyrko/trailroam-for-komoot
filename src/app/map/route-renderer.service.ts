@@ -25,7 +25,7 @@ export class RouteRendererService {
 
     const features = routes.map((route) => ({
       type: 'Feature' as const,
-      properties: { activityId: route.activityId, name: route.name },
+      properties: { activityId: route.activityId, name: route.name, category: route.activity.activityCategory },
       geometry: { type: 'LineString' as const, coordinates: route.coordinates },
     }));
 
@@ -57,8 +57,18 @@ export class RouteRendererService {
       type: 'line',
       source: ROUTES_SOURCE_ID,
       paint: {
-        'line-color': '#1f6f50',
-        'line-opacity': 0.9,
+        'line-color': [
+          'match', ['get', 'category'],
+          'ride', '#1f6f50',
+          'run', '#2d7fb8',
+          'walk', '#b87a2d',
+          'hike', '#8b5e3c',
+          'water', '#3c9bb8',
+          'paddling', '#3ca8a8',
+          'winter', '#8ba8c8',
+          '#63746a',
+        ],
+        'line-opacity': 0.85,
         'line-width': 4,
       },
     });
