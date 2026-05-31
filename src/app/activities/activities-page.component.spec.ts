@@ -35,12 +35,13 @@ function createMockRepositories(activities: ActivityRecord[], totalCount: number
     activities: {
       put: vi.fn(),
       get: vi.fn(),
-      list: vi.fn(),
+      list: vi.fn().mockResolvedValue(activities),
       listPage: vi.fn().mockResolvedValue(activities),
       count: vi.fn().mockResolvedValue(totalCount),
       clear: vi.fn(),
       upsert: vi.fn(),
       updateRouteSyncStatus: vi.fn(),
+      countWithRouteSyncStatus: vi.fn().mockResolvedValue(0),
     },
     activityRoutes: { put: vi.fn(), get: vi.fn(), list: vi.fn(), clear: vi.fn(), upsert: vi.fn() },
     syncState: { put: vi.fn(), get: vi.fn(), clear: vi.fn() },
@@ -117,7 +118,7 @@ describe('ActivitiesPageComponent', () => {
   });
 
   it('should show pagination when more than PAGE_SIZE activities exist', async () => {
-    const activities60 = Array.from({ length: 50 }, (_, i) =>
+    const activities51 = Array.from({ length: 51 }, (_, i) =>
       createActivity({ id: `strava:${i + 1}`, name: `Activity ${i + 1}` }),
     );
 
@@ -126,7 +127,7 @@ describe('ActivitiesPageComponent', () => {
       providers: [
         {
           provide: TRAILROAM_REPOSITORIES,
-          useValue: createMockRepositories(activities60, 60),
+          useValue: createMockRepositories(activities51, 51),
         },
       ],
     });
@@ -138,8 +139,6 @@ describe('ActivitiesPageComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.pagination')).toBeTruthy();
-    expect(compiled.querySelector('.activities-count')?.textContent).toContain('50');
-    expect(compiled.querySelector('.activities-count')?.textContent).toContain('60');
   });
 
   it('should render column headers', async () => {

@@ -136,10 +136,10 @@ function routeStatusLabel(status: string): string {
           </div>
         </div>
 
-        @if (totalCount() > PAGE_SIZE) {
-          <p class="activities-count">Showing {{ filteredActivities()!.length }} of {{ totalCount() }} activities</p>
-        } @else if (totalCount() > 0) {
-          <p class="activities-count">{{ totalCount() }} activities</p>
+        @if (totalFilteredCount() > PAGE_SIZE) {
+          <p class="activities-count">Showing page {{ currentPage() }} of {{ totalPages() }} · {{ totalFilteredCount() }} activities</p>
+        } @else if (totalFilteredCount() > 0) {
+          <p class="activities-count">{{ totalFilteredCount() }} activities</p>
         }
 
         <div class="activities-table-wrap">
@@ -459,11 +459,11 @@ export class ActivitiesPageComponent {
   protected readonly dateFrom = this.filtersService.dateFrom;
   protected readonly dateTo = this.filtersService.dateTo;
 
-  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / PAGE_SIZE)));
+  protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalFilteredCount() / PAGE_SIZE)));
 
-  protected readonly filteredActivities = computed<ActivityRecord[] | null>(() => {
+  protected readonly allFiltered = computed<ActivityRecord[]>(() => {
     const items = this.activities();
-    if (!items) { return null; }
+    if (!items) { return []; }
     const catFilter = this.categoryFilter();
     const fromDate = this.dateFrom();
     const toDate = this.dateTo();
@@ -478,6 +478,17 @@ export class ActivitiesPageComponent {
     const dir = this.sortDirection();
     return filtered.sort((a, b) => dir * compareActivities(a, b, col));
   });
+
+  protected readonly filteredActivities = computed<ActivityRecord[] | null>(() => {
+    const all = this.allFiltered();
+    if (all.length === 0 && this.activities() !== null) { return []; }
+    if (all.length === 0) { return null; }
+    const page = this.currentPage();
+    const start = (page - 1) * PAGE_SIZE;
+    return all.slice(start, start + PAGE_SIZE);
+  });
+
+  protected readonly totalFilteredCount = computed(() => this.allFiltered().length);
 
   constructor() {
     this.loadPage(1);
@@ -527,10 +538,11 @@ export class ActivitiesPageComponent {
     this.status.set('loading');
     try {
       const [items, total] = await Promise.all([
-        this.repositories.activities.listPage(page, PAGE_SIZE),
+        this.repositories.activities.list(),
         this.repositories.activities.count(),
       ]);
 
+      this.currentPage.set(page);
       this.totalCount.set(total);
       this.activities.set(items);
       this.status.set(items.length === 0 ? 'empty' : 'loaded');
