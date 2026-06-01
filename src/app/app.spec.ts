@@ -73,7 +73,7 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const syncButton = compiled.querySelector<HTMLButtonElement>('.sync-menu-trigger');
 
-    expect(compiled.querySelector('.brand')?.textContent).toContain('Trailroam for Strava');
+    expect(compiled.querySelector('.brand')?.textContent).toContain('TrailRoam for Strava');
     expect(compiled.querySelector('.header-actions')).toBeTruthy();
     expect(syncButton?.textContent).toContain('Sync');
     expect(syncButton?.getAttribute('aria-haspopup')).toBe('menu');

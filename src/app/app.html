@@ -1,7 +1,10 @@
 <main class="app-shell">
   <header class="app-header">
     <div class="brand-group">
-      <a class="brand" routerLink="/map">Trailroam for Strava</a>
+      <a class="brand" routerLink="/map">
+        <img class="brand-logo" src="assets/trailroam-logo.svg" alt="" width="24" height="24" />
+        TrailRoam for Strava
+      </a>
       <span class="app-context">Chrome extension</span>
     </div>
 
@@ -85,7 +88,7 @@
     </section>
   }
 
-  <section class="app-content" aria-label="Trailroam workspace">
+  <section class="app-content" aria-label="TrailRoam workspace">
     <router-outlet />
   </section>
 

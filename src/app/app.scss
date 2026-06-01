@@ -26,14 +26,20 @@
 }
 
 .brand {
+  align-items: center;
   color: #14211b;
-  display: block;
+  display: flex;
   font-size: 1.125rem;
   font-weight: 700;
+  gap: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.brand-logo {
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .app-context {

@@ -100,7 +100,7 @@ function routeStatusLabel(status: string): string {
           <p class="empty-state-kicker">No activities yet</p>
           <h2 id="activities-empty-title">Sync activities to start building your local history.</h2>
           <p>
-            Trailroam will show imported Strava activities here after the first successful sync.
+            TrailRoam will show imported Strava activities here after the first successful sync.
           </p>
           <button class="primary-action" type="button">Sync activities</button>
         </article>
