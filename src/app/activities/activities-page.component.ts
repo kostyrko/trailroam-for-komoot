@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { FiltersService, ACTIVITY_CATEGORIES, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
+import { ToastService } from '../shared/toast.service';
 import type { ActivityRecord } from '../storage/storage.models';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
@@ -648,6 +649,7 @@ function routeStatusLabel(status: string): string {
 export class ActivitiesPageComponent {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   protected readonly status = signal<'loading' | 'empty' | 'loaded'>('loading');
   protected readonly activities = signal<ActivityRecord[] | null>(null);
@@ -770,9 +772,16 @@ export class ActivitiesPageComponent {
     }
   }
 
-  protected deleteActivity(event: MouseEvent, activity: ActivityRecord): void {
+  protected async deleteActivity(event: MouseEvent, activity: ActivityRecord): Promise<void> {
     event.stopPropagation();
     this.openMenuId.set(null);
+    await Promise.all([
+      this.repositories.activities.delete(activity.id),
+      this.repositories.activityRoutes.delete(activity.id),
+    ]);
+    this.activities.update((items) => items?.filter((a) => a.id !== activity.id) ?? null);
+    this.totalCount.update((c) => Math.max(0, c - 1));
+    this.toastService.show(`"${activity.name}" was deleted from local database.`);
   }
 
   protected retrySyncRoute(event: MouseEvent, activity: ActivityRecord): void {

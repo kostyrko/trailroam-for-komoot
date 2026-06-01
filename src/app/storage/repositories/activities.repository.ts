@@ -39,6 +39,10 @@ export class ActivitiesRepository {
     await this.db.activities.update(id, { hasRoute, routeSyncStatus, updatedAt: new Date().toISOString() });
   }
 
+  async delete(id: string): Promise<void> {
+    await this.db.activities.delete(id);
+  }
+
   async list(): Promise<ActivityRecord[]> {
     return this.db.activities.orderBy('startDate').reverse().toArray();
   }

@@ -33,6 +33,10 @@ export class ActivityRoutesRepository {
     return { inserted, route: merged };
   }
 
+  async delete(activityId: string): Promise<void> {
+    await this.db.activity_routes.delete(activityId);
+  }
+
   async list(): Promise<ActivityRouteRecord[]> {
     return this.db.activity_routes.toArray();
   }

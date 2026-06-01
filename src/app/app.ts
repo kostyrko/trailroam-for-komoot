@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ConfirmService } from './shared/confirm.service';
+import { ToastComponent } from './shared/toast.component';
 import { SyncSummaryService, type SyncSummary } from './storage/sync-summary.service';
 import { SyncHistoryService, type SyncTrigger } from './storage/sync-history.service';
 import { LocalDataService } from './storage/local-data.service';
@@ -13,7 +14,7 @@ import type { StravaActivityResponse } from './strava/strava-session.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
