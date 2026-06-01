@@ -160,7 +160,7 @@ describe('ActivitiesPageComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const headers = [...compiled.querySelectorAll('thead th')].map((h) => h.textContent?.trim());
-    expect(headers).toEqual(['Date ▼', 'Name', 'Type', 'Distance', 'Speed', 'Time', 'Route']);
+    expect(headers).toEqual(['Date ▼', 'Name', 'Type', 'Distance', 'Speed', 'Time', 'Route', '']);
   });
 
   it('should show route badge for synced routes', async () => {
@@ -207,7 +207,7 @@ describe('ActivitiesPageComponent', () => {
     expect(badge?.classList).not.toContain('route-ok');
   });
 
-  it('should include hover preview popover with quick stats', async () => {
+  it('should not include hover preview popover', async () => {
     TestBed.configureTestingModule({
       imports: [ActivitiesPageComponent],
       providers: [
@@ -230,15 +230,7 @@ describe('ActivitiesPageComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const popover = compiled.querySelector('.preview-popover');
-
-    expect(popover).toBeTruthy();
-    expect(popover?.textContent).toContain('Sunset Trail Run');
-    expect(popover?.textContent).toContain('run');
-    expect(popover?.textContent).toContain('12.00 km');
-    expect(popover?.textContent).toContain('Moving time');
-    expect(popover?.textContent).toContain('Route');
-    expect(popover?.getAttribute('role')).toBe('tooltip');
+    expect(compiled.querySelector('.preview-popover')).toBeFalsy();
   });
 
   it('should sort by date descending by default', async () => {

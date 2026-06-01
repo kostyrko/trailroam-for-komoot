@@ -178,25 +178,14 @@ function routeStatusLabel(status: string): string {
                 <th scope="col" class="sortable" (click)="onSort('speed')">Speed{{ sortIndicator('speed') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('time')">Time{{ sortIndicator('time') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('route')">Route{{ sortIndicator('route') }}</th>
+                <th scope="col" class="col-actions-header"></th>
               </tr>
             </thead>
             <tbody>
               @for (activity of filteredActivities(); track activity.id) {
                 <tr class="activity-row" [class.clickable]="activity.hasRoute" [class.no-route]="!activity.hasRoute" (click)="navigateToActivity(activity)">
                   <td class="cell-date">{{ formatDate(activity.startDate) }}</td>
-                  <td class="cell-name">
-                    <span class="preview-trigger"
-                      >{{ activity.name }}
-                      <span class="preview-popover" role="tooltip">
-                        <span class="preview-line">{{ formatDate(activity.startDate) }}</span>
-                        <span class="preview-line"><strong>{{ activity.name }}</strong></span>
-                        <span class="preview-line">{{ activity.activityCategory }} · {{ formatDistance(activity.distanceMeters) }}</span>
-                        <span class="preview-line">Avg speed: {{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</span>
-                        <span class="preview-line">Moving time: {{ formatDuration(activity.movingTimeSeconds) }}</span>
-                        <span class="preview-line">Route: {{ routeStatusLabel(activity.routeSyncStatus) }}</span>
-                      </span>
-                    </span>
-                  </td>
+                  <td class="cell-name">{{ activity.name }}</td>
                   <td><span class="category-tag"><span class="cat-dot" [style.background]="CATEGORY_COLORS[activity.activityCategory]"></span>{{ activity.activityCategory }}</span></td>
                   <td class="cell-num">{{ formatDistance(activity.distanceMeters) }}</td>
                   <td class="cell-num">{{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</td>
@@ -204,6 +193,39 @@ function routeStatusLabel(status: string): string {
                   <td>
                     <span class="route-badge" [class.route-ok]="activity.routeSyncStatus === 'route_synced'"
                       >{{ routeStatusLabel(activity.routeSyncStatus) }}</span>
+                  </td>
+                  <td class="cell-actions">
+                    <div class="activity-menu-wrapper">
+                      <button
+                        class="activity-menu-trigger"
+                        type="button"
+                        aria-haspopup="menu"
+                        [attr.aria-expanded]="openMenuId() === activity.id"
+                        (click)="toggleActivityMenu($event, activity.id)"
+                      >⋮</button>
+                      @if (openMenuId() === activity.id) {
+                        <ul class="activity-dropdown" role="menu" (click)="$event.stopPropagation()">
+                          <li role="none">
+                            <button class="act-dropdown-item" role="menuitem" (click)="openOnStrava($event, activity)">
+                              <svg class="act-dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                              Strava
+                            </button>
+                          </li>
+                          <li role="none">
+                            <button class="act-dropdown-item act-dropdown-item-danger" role="menuitem" (click)="deleteActivity($event, activity)">
+                              <svg class="act-dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              Delete
+                            </button>
+                          </li>
+                          <li role="none">
+                            <button class="act-dropdown-item" role="menuitem" (click)="retrySyncRoute($event, activity)">
+                              <svg class="act-dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                              Retry sync
+                            </button>
+                          </li>
+                        </ul>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -401,41 +423,115 @@ function routeStatusLabel(status: string): string {
       font-size: 0.8125rem;
     }
 
-    .preview-trigger {
-      cursor: default;
+    .col-actions-header {
+      width: 56px;
+    }
+
+    .cell-actions {
+      padding: 4px 8px;
+      text-align: center;
+      width: 56px;
+    }
+
+    .activity-menu-wrapper {
       position: relative;
     }
 
-    .preview-popover {
-      background: #14211b;
+    .activity-menu-trigger {
+      align-items: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #63746a;
+      cursor: pointer;
+      display: inline-flex;
+      font-size: 1.125rem;
+      font-weight: 700;
+      justify-content: center;
+      letter-spacing: 2px;
+      line-height: 1;
+      min-height: 36px;
+      min-width: 36px;
+      padding: 0;
+    }
+
+    .activity-menu-trigger:hover {
+      background: #eef5f0;
+      border-color: #dce6df;
+      color: #14211b;
+    }
+
+    .activity-menu-trigger:active {
+      background: #dce6df;
+    }
+
+    .activity-dropdown {
+      background: #ffffff;
+      border: 1px solid #dce6df;
       border-radius: 8px;
-      bottom: calc(100% + 8px);
-      box-shadow: 0 4px 12px rgb(20 33 27 / 25%);
-      color: #ffffff;
-      display: none;
-      font-size: 0.8125rem;
-      font-weight: 400;
-      left: 50%;
-      line-height: 1.5;
-      min-width: 200px;
-      padding: 10px 14px;
+      box-shadow: 0 4px 16px rgb(20 33 27 / 18%);
+      list-style: none;
+      margin: 4px 0 0;
+      min-width: 160px;
+      padding: 4px;
       position: absolute;
-      transform: translateX(-50%);
+      right: 0;
+      top: 100%;
+      z-index: 100;
+    }
+
+    .act-dropdown-item {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      color: #314b3f;
+      cursor: pointer;
+      display: flex;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      gap: 10px;
+      min-height: 34px;
+      padding: 6px 10px;
+      text-align: left;
       white-space: nowrap;
-      z-index: 10;
+      width: 100%;
     }
 
-    .preview-trigger:hover .preview-popover {
-      display: block;
+    .act-dropdown-item:hover {
+      background: #eef5f0;
     }
 
-    .preview-line {
-      display: block;
+    .act-dropdown-item:active {
+      background: #dce6df;
     }
 
-    .preview-line strong {
-      color: #ffffff;
+    .act-dropdown-icon {
+      color: #a0b4a6;
+      flex-shrink: 0;
     }
+
+    .act-dropdown-item:hover .act-dropdown-icon {
+      color: #63746a;
+    }
+
+    .act-dropdown-item-danger {
+      color: #8f2d22;
+    }
+
+    .act-dropdown-item-danger:hover {
+      background: #fdf0ee;
+    }
+
+    .act-dropdown-item-danger .act-dropdown-icon {
+      color: #c2817a;
+    }
+
+    .act-dropdown-item-danger:hover .act-dropdown-icon {
+      color: #8f2d22;
+    }
+
 
     .activities-filters {
       margin-top: 16px;
@@ -565,6 +661,7 @@ export class ActivitiesPageComponent {
   protected readonly sortDirection = signal<-1 | 1>(-1);
   protected readonly filterMenuOpen = signal(false);
   protected readonly pageSizeMenuOpen = signal(false);
+  protected readonly openMenuId = signal<string | null>(null);
 
   private readonly filtersService = inject(FiltersService);
   protected readonly categoryFilter = this.filtersService.categoryFilter;
@@ -605,6 +702,7 @@ export class ActivitiesPageComponent {
 
   constructor() {
     this.loadPage(1);
+    globalThis.addEventListener('click', () => this.closeAllMenus());
   }
 
   protected onPageSizeChange(size: number): void {
@@ -649,6 +747,37 @@ export class ActivitiesPageComponent {
     if (activity.hasRoute) {
       this.router.navigate(['/map'], { queryParams: { activityId: activity.id } });
     }
+  }
+
+  protected toggleActivityMenu(event: MouseEvent, activityId: string): void {
+    event.stopPropagation();
+    this.openMenuId.update((current) => current === activityId ? null : activityId);
+  }
+
+  protected closeAllMenus(): void {
+    this.openMenuId.set(null);
+  }
+
+  protected openOnStrava(event: MouseEvent, activity: ActivityRecord): void {
+    event.stopPropagation();
+    this.openMenuId.set(null);
+    const url = `https://www.strava.com/activities/${activity.providerActivityId}`;
+    const c = (globalThis as any).chrome;
+    if (c?.tabs?.create) {
+      c.tabs.create({ url });
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  protected deleteActivity(event: MouseEvent, activity: ActivityRecord): void {
+    event.stopPropagation();
+    this.openMenuId.set(null);
+  }
+
+  protected retrySyncRoute(event: MouseEvent, activity: ActivityRecord): void {
+    event.stopPropagation();
+    this.openMenuId.set(null);
   }
 
   protected computeSpeed = computeSpeed;
