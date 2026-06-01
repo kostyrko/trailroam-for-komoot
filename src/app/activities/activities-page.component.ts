@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { FiltersService, ACTIVITY_CATEGORIES, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import { ToastService } from '../shared/toast.service';
+import { StravaSessionService } from '../strava/strava-session.service';
+import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
 import type { ActivityRecord } from '../storage/storage.models';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
@@ -646,6 +648,8 @@ export class ActivitiesPageComponent {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  private readonly stravaSessionService = inject(StravaSessionService);
+  private readonly routeNormalizer = inject(StravaRouteNormalizer);
 
   protected readonly status = signal<'loading' | 'empty' | 'loaded'>('loading');
   protected readonly activities = signal<ActivityRecord[] | null>(null);
@@ -793,9 +797,37 @@ export class ActivitiesPageComponent {
     this.toastService.show(`"${activity.name}" was deleted from local database.`);
   }
 
-  protected retrySyncRoute(event: MouseEvent, activity: ActivityRecord): void {
+  protected async retrySyncRoute(event: MouseEvent, activity: ActivityRecord): Promise<void> {
     event.stopPropagation();
     this.openMenuId.set(null);
+    const fetchResult = await this.stravaSessionService.fetchActivityRoute(Number(activity.providerActivityId));
+    if (fetchResult.success) {
+      const normalized = this.routeNormalizer.normalize(activity.id, activity.providerActivityId, fetchResult);
+      if (normalized.success) {
+        const now = new Date().toISOString();
+        await this.repositories.activityRoutes.upsert(normalized.route);
+        await this.repositories.activities.updateRouteSyncStatus(activity.id, true, 'route_synced');
+        this.activities.update((items) =>
+          items?.map((a) => a.id === activity.id ? { ...a, hasRoute: true, routeSyncStatus: 'route_synced' as const, updatedAt: now } : a) ?? null,
+        );
+        this.toastService.show(`Route synced for "${activity.name}".`);
+      } else {
+        const status = normalized.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
+        await this.repositories.activities.updateRouteSyncStatus(activity.id, false, status);
+        this.activities.update((items) =>
+          items?.map((a) => a.id === activity.id ? { ...a, routeSyncStatus: status, updatedAt: new Date().toISOString() } : a) ?? null,
+        );
+        this.toastService.show(`No GPS route available for "${activity.name}".`);
+      }
+    } else {
+      const status = fetchResult.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
+      await this.repositories.activities.updateRouteSyncStatus(activity.id, false, status);
+      this.activities.update((items) =>
+        items?.map((a) => a.id === activity.id ? { ...a, routeSyncStatus: status, updatedAt: new Date().toISOString() } : a) ?? null,
+      );
+      const msg = fetchResult.errorCode === 'STRAVA_LOGIN_REQUIRED' ? 'Log into Strava first to sync routes.' : `No GPS route available for "${activity.name}".`;
+      this.toastService.show(msg);
+    }
   }
 
   protected computeSpeed = computeSpeed;
