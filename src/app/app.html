@@ -25,42 +25,20 @@
           [attr.aria-expanded]="syncMenuOpen()"
           (click)="toggleSyncMenu()"
         >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           Sync
-          <span aria-hidden="true">v</span>
         </button>
 
         @if (syncMenuOpen()) {
-          <ul class="sync-dropdown" role="menu" aria-label="Sync and data management" (click)="$event.stopPropagation()">
+          <ul class="sync-dropdown" role="menu" aria-label="Sync actions" (click)="$event.stopPropagation()">
             <li role="none">
               <button class="dropdown-item" role="menuitem" (click)="syncNewActivities()">
-                Sync new activities
+                Sync activities
               </button>
             </li>
             <li role="none">
               <button class="dropdown-item" role="menuitem" (click)="syncMissingRoutes()">
                 Sync missing routes
-              </button>
-            </li>
-            <li role="none" class="dropdown-divider" aria-hidden="true"></li>
-            <li role="none">
-              <button class="dropdown-item dropdown-item-danger" role="menuitem" (click)="clearAndResync()">
-                Clear and re-sync
-              </button>
-            </li>
-            <li role="none">
-              <button class="dropdown-item dropdown-item-danger" role="menuitem" (click)="clearSyncedLocalData()">
-                Clear synced local data
-              </button>
-            </li>
-            <li role="none" class="dropdown-divider" aria-hidden="true"></li>
-            <li role="none">
-              <button class="dropdown-item" role="menuitem" (click)="backupLocalData()">
-                Backup local data
-              </button>
-            </li>
-            <li role="none">
-              <button class="dropdown-item" role="menuitem" (click)="restoreLocalData()">
-                Restore local data
               </button>
             </li>
           </ul>

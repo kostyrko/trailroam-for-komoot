@@ -210,7 +210,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
           <p>
             Start a sync to import Strava activities and show available route lines on this map.
           </p>
-          <button class="primary-action" type="button">Sync new activities</button>
+          <button class="primary-action" type="button">Sync activities</button>
         </article>
       }
     </section>

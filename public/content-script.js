@@ -30,19 +30,45 @@ async function runSync() {
   log('Sync started');
   setStatus('Fetching your activities from Strava...');
 
+  var syncedIds = new Set();
+
+  try {
+    syncedIds = await new Promise(function (resolve) {
+      chrome.runtime.sendMessage({ type: 'TRAILROAM_GET_SYNCED_IDS' }, function (response) {
+        resolve(new Set((response && response.syncedIds) || []));
+      });
+    });
+    log('Known synced IDs: ' + syncedIds.size);
+  } catch (err) {
+    log('Failed to get synced IDs, will fetch all', err);
+  }
+
   try {
     var page = 1;
     var perPage = 20;
     var rawActivities = [];
     var total = Infinity;
+    var foundExisting = false;
 
-    while (rawActivities.length < total) {
+    while (rawActivities.length < total && !foundExisting) {
       var result = await fetchActivityList(page, perPage);
       if (!result || !Array.isArray(result.models) || result.models.length === 0) break;
-      rawActivities = rawActivities.concat(result.models);
+      for (var i = 0; i < result.models.length; i++) {
+        var activityId = String(result.models[i].id);
+        if (syncedIds.has(activityId)) {
+          foundExisting = true;
+          log('Found already synced activity ' + activityId + ' on page ' + page + ', stopping pagination');
+          break;
+        }
+        rawActivities.push(result.models[i]);
+      }
       if (result.total !== undefined) total = result.total;
       page++;
       setStatus('Fetching your activities from Strava (' + rawActivities.length + '/' + total + ')...');
+    }
+
+    if (foundExisting) {
+      log('Stopped pagination early at page ' + (page - 1) + ' with ' + rawActivities.length + ' new activities');
     }
 
     log('Fetched ' + rawActivities.length + ' activities from Strava');

@@ -13,6 +13,16 @@ function forwardToApp(type, payload) {
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (!message || !message.type) return true;
 
+  if (message.type === 'TRAILROAM_GET_SYNCED_IDS') {
+    var appMsg = { type: 'TRAILROAM_GET_SYNCED_IDS', payload: {} };
+    chrome.runtime.sendMessage(appMsg).then(function (response) {
+      sendResponse(response || { syncedIds: [] });
+    }).catch(function () {
+      sendResponse({ syncedIds: [] });
+    });
+    return true;
+  }
+
   if (message.type === 'TRAILROAM_GET_MISSING_ACTIVITIES') {
     var appMessage = { type: 'TRAILROAM_GET_MISSING_ACTIVITIES', payload: {} };
     chrome.runtime.sendMessage(appMessage).then(function (response) {

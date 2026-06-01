@@ -17,9 +17,9 @@ import { SyncHistoryService } from './storage/sync-history.service';
 
       <article class="empty-state" aria-labelledby="sync-data-title">
         <p class="empty-state-kicker">Sync</p>
-        <h2 id="sync-data-title">Sync new activities</h2>
-        <p>Import new or updated Strava activities and their GPS routes.</p>
-        <button class="primary-action" type="button" (click)="syncNewActivities()">Sync new activities</button>
+        <h2 id="sync-data-title">Sync activities</h2>
+        <p>Import new Strava activities and their GPS routes.</p>
+        <button class="primary-action" type="button" (click)="syncNewActivities()">Sync activities</button>
       </article>
 
       <article class="empty-state" aria-labelledby="sync-routes-title">
@@ -174,7 +174,7 @@ export class SettingsPage {
 
   protected formatTrigger(trigger: string): string {
     switch (trigger) {
-      case 'sync_new_activities': return 'Sync new activities';
+      case 'sync_new_activities': return 'Sync activities';
       case 'sync_missing_routes': return 'Sync missing routes';
       case 'clear_and_resync': return 'Clear and re-sync';
       case 'clear_synced_local_data': return 'Clear synced local data';

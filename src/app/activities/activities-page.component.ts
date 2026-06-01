@@ -98,11 +98,11 @@ function routeStatusLabel(status: string): string {
       } @else if (status() === 'empty') {
         <article class="empty-state" aria-labelledby="activities-empty-title">
           <p class="empty-state-kicker">No activities yet</p>
-          <h2 id="activities-empty-title">Sync new activities to start building your local history.</h2>
+          <h2 id="activities-empty-title">Sync activities to start building your local history.</h2>
           <p>
             Trailroam will show imported Strava activities here after the first successful sync.
           </p>
-          <button class="primary-action" type="button">Sync new activities</button>
+          <button class="primary-action" type="button">Sync activities</button>
         </article>
       } @else if (activities(); as items) {
         <div class="activities-filters">

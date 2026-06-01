@@ -61,6 +61,10 @@ export class App {
         this.sendMissingActivityIds(sendResponse);
         return true;
       }
+      if (msg?.type === 'TRAILROAM_GET_SYNCED_IDS') {
+        this.sendSyncedIds(sendResponse);
+        return true;
+      }
       if (msg?.type === 'TRAILROAM_STORE_ACTIVITIES') {
         console.log('[Trailroam] Store activities received, count:', msg.payload?.activities?.length ?? 0);
         this.storeImportedData(msg.payload).then(() => {
@@ -180,6 +184,12 @@ export class App {
     }
   }
 
+  private async sendSyncedIds(sendResponse: (response: any) => void): Promise<void> {
+    const activities = await this.repositories.activities.list();
+    const ids = new Set(activities.map((a) => a.providerActivityId));
+    sendResponse({ syncedIds: [...ids] });
+  }
+
   private async sendMissingActivityIds(sendResponse: (response: any) => void): Promise<void> {
     const activities = await this.repositories.activities.list();
     const needing = activities
@@ -244,6 +254,7 @@ export class App {
 
   protected syncNewActivities(): void {
     this.closeSyncMenu();
+    this.importHistoryRecorded = false;
     const c = (globalThis as any).chrome;
     if (c?.tabs?.create) {
       c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });

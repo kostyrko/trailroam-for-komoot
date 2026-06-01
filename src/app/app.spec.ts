@@ -289,7 +289,7 @@ describe('MapPage', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.empty-state')?.textContent).toContain('No routes yet');
-    expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync new activities');
+    expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync activities');
   });
 
   it('should update to basemap error state when map loading fails', async () => {

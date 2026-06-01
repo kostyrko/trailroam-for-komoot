@@ -82,7 +82,7 @@ describe('ActivitiesPageComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.empty-state-kicker')?.textContent).toContain('No activities yet');
-    expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync new activities');
+    expect(compiled.querySelector('.empty-state')?.textContent).toContain('Sync activities');
   });
 
   it('should render activities table when activities exist', async () => {
