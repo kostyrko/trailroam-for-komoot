@@ -88,12 +88,9 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       }
 
     <section class="route-page" aria-labelledby="map-title">
-      <div class="title-row">
-        <div>
-          <p class="eyebrow">Map</p>
-          <h1 id="map-title">Map</h1>
-        </div>
-        <button class="title-action-btn" type="button" (click)="reloadPage()" title="Reload map">↻ Reload</button>
+      <div>
+        <p class="eyebrow">Map</p>
+        <h1 id="map-title">Map</h1>
       </div>
 
       <div class="map-filters">
@@ -228,33 +225,6 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       margin-top: 16px;
       padding: 20px;
       width: 100%;
-    }
-
-    .title-row {
-      align-items: flex-end;
-      display: flex;
-      gap: 12px;
-      justify-content: space-between;
-    }
-
-    .title-action-btn {
-      background: transparent;
-      border: 1px solid #dce6df;
-      border-radius: 6px;
-      color: #63746a;
-      cursor: pointer;
-      font: inherit;
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-bottom: 2px;
-      min-height: 30px;
-      padding: 4px 10px;
-      white-space: nowrap;
-    }
-
-    .title-action-btn:hover {
-      background: #eef5f0;
-      color: #14211b;
     }
 
     .route-detail-header {
@@ -641,10 +611,6 @@ export class MapPage implements AfterViewInit {
   protected formatDateInput = formatDateInput;
   protected onDateFromChange = this.filtersService.setDateFrom.bind(this.filtersService);
   protected onDateToChange = this.filtersService.setDateTo.bind(this.filtersService);
-
-  protected reloadPage(): void {
-    location.reload();
-  }
 
   protected showBasemapError(): void {
     this.mapBasemapError.set(true);

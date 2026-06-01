@@ -5,11 +5,16 @@
       <span class="app-context">Chrome extension</span>
     </div>
 
-    <nav class="app-nav" aria-label="Primary navigation">
-      <a routerLink="/activities" routerLinkActive="active">Activities</a>
-      <a routerLink="/map" routerLinkActive="active">Map</a>
-      <a routerLink="/settings" routerLinkActive="active">Settings</a>
-    </nav>
+    <div class="app-nav-wrap">
+      <nav class="app-nav" aria-label="Primary navigation">
+        <a routerLink="/activities" routerLinkActive="active">Activities</a>
+        <a routerLink="/map" routerLinkActive="active">Map</a>
+        <a routerLink="/settings" routerLinkActive="active">Settings</a>
+      </nav>
+      <button class="nav-reload-btn" type="button" (click)="refreshExtension()" title="Reload extension" aria-label="Reload extension">
+        ↻ Reload
+      </button>
+    </div>
 
     <div class="header-actions" aria-label="Sync controls">
       <div class="sync-menu-wrapper">
@@ -108,8 +113,5 @@
 
   <footer class="app-footer">
     <span class="build-version">build {{ buildDate }}</span>
-    <button class="footer-reload-btn" type="button" (click)="refreshExtension()" title="Reload extension" aria-label="Reload extension">
-      ↻ Reload
-    </button>
   </footer>
 </main>
