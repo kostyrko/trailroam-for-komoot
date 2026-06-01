@@ -37,6 +37,10 @@ export class ActivityRoutesRepository {
     return this.db.activity_routes.toArray();
   }
 
+  async count(): Promise<number> {
+    return this.db.activity_routes.count();
+  }
+
   async clear(): Promise<void> {
     await this.db.activity_routes.clear();
   }

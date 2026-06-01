@@ -69,28 +69,32 @@
       <div>
         <p class="sync-summary-kicker">Sync completed</p>
         <p id="sync-summary-title">
-          @if (summary.importedCount) {
-            Imported: {{ summary.importedCount }}
-          }
-          @if (summary.updatedCount) {
-            · Updated: {{ summary.updatedCount }}
-          }
-          @if (summary.routesSyncedCount) {
-            · Route files: {{ summary.routesSyncedCount }}
-          }
-          @if (summary.skippedCount) {
-            · Skipped: {{ summary.skippedCount }}
-          }
-          @if (summary.rateLimitedCount) {
-            · Rate limited: {{ summary.rateLimitedCount }}
-          }
-          @if (summary.failedCount) {
-            · Failed: {{ summary.failedCount }}
-          }
-          @if (summary.lastErrorMessage) {
-            · Error: {{ summary.lastErrorMessage }}
-          }
+          {{ summary.totalActivities }} activities:
+          {{ summary.activitiesWithRoutes }} with routes,
+          {{ summary.activitiesWithoutRoutes }} without GPS
         </p>
+        @if (summary.importedCount || summary.updatedCount || summary.skippedCount || summary.failedCount || summary.rateLimitedCount || summary.lastErrorMessage) {
+          <p class="sync-summary-detail">
+            @if (summary.importedCount) {
+              Imported: {{ summary.importedCount }}
+            }
+            @if (summary.updatedCount) {
+              · Updated: {{ summary.updatedCount }}
+            }
+            @if (summary.skippedCount) {
+              · Skipped: {{ summary.skippedCount }}
+            }
+            @if (summary.rateLimitedCount) {
+              · Rate limited: {{ summary.rateLimitedCount }}
+            }
+            @if (summary.failedCount) {
+              · Failed: {{ summary.failedCount }}
+            }
+            @if (summary.lastErrorMessage) {
+              · Error: {{ summary.lastErrorMessage }}
+            }
+          </p>
+        }
       </div>
       <button class="sync-summary-dismiss" type="button" (click)="dismissSyncSummary()" aria-label="Dismiss sync summary">
         Dismiss

@@ -7,8 +7,8 @@ function createMockRepositories(
   overrides: Partial<TrailroamRepositories> = {},
 ): TrailroamRepositories {
   return {
-    activities: { put: vi.fn(), get: vi.fn(), list: vi.fn(), clear: vi.fn(), upsert: vi.fn() } as any,
-    activityRoutes: { put: vi.fn(), get: vi.fn(), list: vi.fn(), clear: vi.fn() } as any,
+    activities: { put: vi.fn(), get: vi.fn(), list: vi.fn(), count: vi.fn().mockResolvedValue(0), clear: vi.fn(), upsert: vi.fn() } as any,
+    activityRoutes: { put: vi.fn(), get: vi.fn(), list: vi.fn(), count: vi.fn().mockResolvedValue(0), clear: vi.fn() } as any,
     syncState: { put: vi.fn(), get: vi.fn(), clear: vi.fn() } as any,
     settings: { put: vi.fn(), get: vi.fn(), clear: vi.fn(), getOrCreateDefault: vi.fn() } as any,
     accessState: { put: vi.fn(), get: vi.fn(), clear: vi.fn(), getOrCreateDefault: vi.fn() } as any,
@@ -48,6 +48,9 @@ describe('SyncSummaryService', () => {
     expect(summary.routesSyncedCount).toBe(0);
     expect(summary.skippedCount).toBe(0);
     expect(summary.failedCount).toBe(0);
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.status).toBeNull();
   });
 
@@ -67,6 +70,9 @@ describe('SyncSummaryService', () => {
     const summary = await service.getSummary();
 
     expect(summary.hasResults).toBe(true);
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.importedCount).toBe(5);
     expect(summary.updatedCount).toBe(2);
     expect(summary.routesSyncedCount).toBe(3);
@@ -92,6 +98,9 @@ describe('SyncSummaryService', () => {
     const summary = await service.getSummary();
 
     expect(summary.hasResults).toBe(true);
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.status).toBe('failed');
     expect(summary.lastErrorCode).toBe('ACTIVITY_ROUTE_FETCH_FAILED');
     expect(summary.lastErrorMessage).toBe('Failed to fetch route for activity 123');
@@ -106,6 +115,9 @@ describe('SyncSummaryService', () => {
     }));
 
     const summary = await service.getSummary();
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.rateLimitedCount).toBe(3);
     expect(summary.hasResults).toBe(true);
   });
@@ -118,6 +130,9 @@ describe('SyncSummaryService', () => {
     }));
 
     const summary = await service.getSummary();
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.status).toBeNull();
     expect(summary.hasResults).toBe(true);
   });
@@ -135,6 +150,9 @@ describe('SyncSummaryService', () => {
     }));
 
     const summary = await service.getSummary();
+    expect(summary.totalActivities).toBe(0);
+    expect(summary.activitiesWithRoutes).toBe(0);
+    expect(summary.activitiesWithoutRoutes).toBe(0);
     expect(summary.hasResults).toBe(false);
   });
 });

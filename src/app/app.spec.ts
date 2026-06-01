@@ -17,7 +17,12 @@ function flushMicrotasks(): Promise<void> {
 }
 
 describe('App', () => {
-  function configureApp(syncStateGet: () => any = () => undefined, confirmMock = vi.fn()): void {
+  function configureApp(
+    syncStateGet: () => any = () => undefined,
+    confirmMock = vi.fn(),
+    activitiesCount = 0,
+    routesCount = 0,
+  ): void {
     TestBed.configureTestingModule({
       imports: [App],
       providers: [
@@ -25,8 +30,8 @@ describe('App', () => {
         {
           provide: TRAILROAM_REPOSITORIES,
           useValue: {
-            activities: { put: vi.fn(), get: vi.fn(), list: vi.fn(), clear: vi.fn(), upsert: vi.fn() },
-            activityRoutes: { put: vi.fn(), get: vi.fn(), list: vi.fn(), clear: vi.fn() },
+            activities: { put: vi.fn(), get: vi.fn(), list: vi.fn(), count: vi.fn().mockResolvedValue(activitiesCount), clear: vi.fn(), upsert: vi.fn() },
+            activityRoutes: { put: vi.fn(), get: vi.fn(), list: vi.fn(), count: vi.fn().mockResolvedValue(routesCount), clear: vi.fn() },
             syncState: { put: vi.fn(), get: vi.fn().mockImplementation(syncStateGet), clear: vi.fn() },
             settings: { put: vi.fn(), get: vi.fn(), clear: vi.fn(), getOrCreateDefault: vi.fn() },
             accessState: { put: vi.fn(), get: vi.fn(), clear: vi.fn(), getOrCreateDefault: vi.fn() },
@@ -84,15 +89,20 @@ describe('App', () => {
     });
 
     it('should show sync summary when there are sync results', async () => {
-      configureApp(() => ({
-        id: 'default',
-        status: 'completed',
-        importedCount: 5,
-        updatedCount: 2,
-        routesSyncedCount: 3,
-        skippedCount: 1,
-        failedCount: 0,
-      }));
+      configureApp(
+        () => ({
+          id: 'default',
+          status: 'completed',
+          importedCount: 5,
+          updatedCount: 2,
+          routesSyncedCount: 3,
+          skippedCount: 1,
+          failedCount: 0,
+        }),
+        undefined,
+        42,
+        30,
+      );
       const fixture = TestBed.createComponent(App);
       fixture.detectChanges();
       await flushMicrotasks();
@@ -101,23 +111,25 @@ describe('App', () => {
       const summary = fixture.nativeElement.querySelector('.sync-summary') as HTMLElement;
       expect(summary).toBeTruthy();
       expect(summary.textContent).toContain('Sync completed');
+      expect(summary.textContent).toContain('42 activities: 30 with routes, 12 without GPS');
       expect(summary.textContent).toContain('Imported: 5');
       expect(summary.textContent).toContain('Updated: 2');
-      expect(summary.textContent).toContain('Route files: 3');
       expect(summary.textContent).toContain('Skipped: 1');
       expect(summary.textContent).not.toContain('Failed');
     });
 
     it('should dismiss sync summary when dismiss button is clicked', async () => {
-      configureApp(() => ({
-        id: 'default',
-        status: 'completed',
-        importedCount: 3,
-        updatedCount: 0,
-        routesSyncedCount: 1,
-        skippedCount: 0,
-        failedCount: 0,
-      }));
+      configureApp(
+        () => ({
+          id: 'default',
+          status: 'completed',
+          importedCount: 3,
+          updatedCount: 0,
+          routesSyncedCount: 1,
+          skippedCount: 0,
+          failedCount: 0,
+        }),
+      );
       const fixture = TestBed.createComponent(App);
       fixture.detectChanges();
       await flushMicrotasks();
@@ -133,17 +145,19 @@ describe('App', () => {
     });
 
     it('should show error message in sync summary when sync failed', async () => {
-      configureApp(() => ({
-        id: 'default',
-        status: 'failed',
-        importedCount: 2,
-        updatedCount: 0,
-        routesSyncedCount: 0,
-        skippedCount: 0,
-        failedCount: 1,
-        lastErrorCode: 'ACTIVITY_ROUTE_FETCH_FAILED',
-        lastErrorMessage: 'Failed to fetch route for activity 123',
-      }));
+      configureApp(
+        () => ({
+          id: 'default',
+          status: 'failed',
+          importedCount: 2,
+          updatedCount: 0,
+          routesSyncedCount: 0,
+          skippedCount: 0,
+          failedCount: 1,
+          lastErrorCode: 'ACTIVITY_ROUTE_FETCH_FAILED',
+          lastErrorMessage: 'Failed to fetch route for activity 123',
+        }),
+      );
       const fixture = TestBed.createComponent(App);
       fixture.detectChanges();
       await flushMicrotasks();
@@ -151,6 +165,7 @@ describe('App', () => {
 
       const summary = fixture.nativeElement.querySelector('.sync-summary') as HTMLElement;
       expect(summary).toBeTruthy();
+      expect(summary.textContent).toContain('0 activities: 0 with routes, 0 without GPS');
       expect(summary.textContent).toContain('Failed: 1');
       expect(summary.textContent).toContain('Error: Failed to fetch route for activity 123');
     });

@@ -15,6 +15,9 @@ export interface SyncSummary {
   lastErrorCode: string | null;
   lastErrorMessage: string | null;
   hasResults: boolean;
+  totalActivities: number;
+  activitiesWithRoutes: number;
+  activitiesWithoutRoutes: number;
 }
 
 @Injectable({
@@ -50,6 +53,12 @@ export class SyncSummaryService {
       return emptySummary();
     }
 
+    const [totalActivities, activitiesWithRoutes] = await Promise.all([
+      this.repositories.activities.count(),
+      this.repositories.activityRoutes.count(),
+    ]);
+    const activitiesWithoutRoutes = totalActivities - activitiesWithRoutes;
+
     const status = syncState.status === 'idle' || syncState.status === 'checking_session' || syncState.status === 'fetching_activities' || syncState.status === 'fetching_routes' ? null : syncState.status;
 
     return {
@@ -65,6 +74,9 @@ export class SyncSummaryService {
       lastErrorCode: syncState.lastErrorCode ?? null,
       lastErrorMessage: syncState.lastErrorMessage ?? null,
       hasResults: (syncState.importedCount ?? 0) > 0 || (syncState.updatedCount ?? 0) > 0 || (syncState.routesSyncedCount ?? 0) > 0 || (syncState.skippedCount ?? 0) > 0 || (syncState.failedCount ?? 0) > 0 || (syncState.rateLimitedCount ?? 0) > 0,
+      totalActivities,
+      activitiesWithRoutes,
+      activitiesWithoutRoutes,
     };
   }
 }
@@ -83,5 +95,8 @@ function emptySummary(): SyncSummary {
     lastErrorCode: null,
     lastErrorMessage: null,
     hasResults: false,
+    totalActivities: 0,
+    activitiesWithRoutes: 0,
+    activitiesWithoutRoutes: 0,
   };
 }
