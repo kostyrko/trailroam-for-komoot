@@ -8,6 +8,7 @@ import {
   Output,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
 import { BasemapProviderService } from './basemap-provider.service';
@@ -18,8 +19,20 @@ import { RouteRendererService } from './route-renderer.service';
 @Component({
   selector: 'app-maplibre-map',
   template: `
-    <div class="map-shell" aria-label="Activity route map">
+    <div class="map-shell" [class.map-fullscreen]="fullscreen()" aria-label="Activity route map" (document:keydown)="onDocumentKeydown($event)">
       <div #mapContainer class="map-container"></div>
+      <button
+        class="map-fit-btn"
+        type="button"
+        [attr.aria-label]="fullscreen() ? 'Reset map view' : 'Fit map to screen'"
+        (click)="toggleFullscreen()"
+      >
+        @if (fullscreen()) {
+          <span class="fit-icon fit-icon-compress">⤡</span>
+        } @else {
+          <span class="fit-icon fit-icon-expand">⤢</span>
+        }
+      </button>
     </div>
   `,
 })
@@ -39,6 +52,8 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private readonly ngZone = inject(NgZone);
   private isDestroyed = false;
   private pendingReadyTasks: (() => void)[] | null = [];
+  protected readonly fullscreen = signal(false);
+  private mapInstance: Map | null = null;
 
   async ngAfterViewInit(): Promise<void> {
     let map: Map;
@@ -56,6 +71,10 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
       map.remove();
       return;
     }
+
+    this.mapInstance = map;
+
+    map.on('load', () => this.addMapControls());
 
     map.once('error', (err) => {
       console.error('MapLibre runtime error:', err);
@@ -114,6 +133,31 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.isDestroyed = true;
     this.pendingReadyTasks = null;
+    this.mapInstance = null;
+  }
+
+  protected toggleFullscreen(): void {
+    this.fullscreen.update((v) => !v);
+  }
+
+  protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.fullscreen()) {
+      this.fullscreen.set(false);
+      event.preventDefault();
+    }
+  }
+
+  private addMapControls(): void {
+    const map = this.mapInstance;
+    if (!map) { return; }
+    (async () => {
+      try {
+        const { default: maplibregl } = await import('maplibre-gl');
+        map.addControl(new maplibregl.NavigationControl({}), 'top-left');
+        map.addControl(new maplibregl.ScaleControl({ unit: 'metric', maxWidth: 200 }), 'bottom-left');
+      } catch {
+      }
+    })();
   }
 
   private emitBasemapLoadFailed(): void {

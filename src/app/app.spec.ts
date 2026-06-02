@@ -230,7 +230,7 @@ describe('MapPage', () => {
     renderRoutes = vi.fn();
     selectRoute = vi.fn();
     removeMap = vi.fn();
-    createMap = vi.fn().mockResolvedValue({ once: onMapEvent, remove: removeMap });
+    createMap = vi.fn().mockResolvedValue({ once: onMapEvent, on: vi.fn(), remove: removeMap, addControl: vi.fn(), isStyleLoaded: () => true });
 
     TestBed.configureTestingModule({
       imports: [MapPage],
@@ -247,7 +247,7 @@ describe('MapPage', () => {
         },
         {
           provide: RouteRendererService,
-          useValue: { renderRoutes, selectRoute },
+          useValue: { renderRoutes, selectRoute, init: vi.fn(), fitToRoute: vi.fn() },
         },
         {
           provide: TRAILROAM_REPOSITORIES,

@@ -7,6 +7,16 @@ import { MapLibreService } from './maplibre.service';
 import { type MapRouteFeature } from './mock-routes';
 import { RouteRendererService } from './route-renderer.service';
 
+vi.mock('maplibre-gl', () => {
+  const NavigationControl = vi.fn();
+  const ScaleControl = vi.fn();
+  return {
+    default: { NavigationControl, ScaleControl },
+    NavigationControl,
+    ScaleControl,
+  };
+});
+
 function makeMockRoute(overrides: Partial<MapRouteFeature> = {}): MapRouteFeature {
   return {
     activityId: 'test:1',
@@ -67,7 +77,13 @@ describe('MapLibreMapComponent', () => {
     selectRoute = vi.fn();
     fitToRoute = vi.fn();
     mockRenderer = { renderRoutes, selectRoute, fitToRoute, init: vi.fn() };
-    createMap = vi.fn().mockResolvedValue({ once, remove, isStyleLoaded: () => true } as unknown as Map);
+    createMap = vi.fn().mockResolvedValue({
+      once,
+      on: vi.fn(),
+      remove,
+      addControl: vi.fn(),
+      isStyleLoaded: () => true,
+    } as unknown as Map);
 
     TestBed.configureTestingModule({
       imports: [MapLibreMapComponent],

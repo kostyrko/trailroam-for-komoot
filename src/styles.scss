@@ -56,11 +56,61 @@ p {
   margin-top: 28px;
   min-height: 360px;
   overflow: hidden;
+  position: relative;
+  transition: height 0.2s ease;
+}
+
+.map-shell.map-fullscreen {
+  border-radius: 0;
+  bottom: 0;
+  height: 100dvh;
+  left: 0;
+  margin: 0;
+  min-height: 100dvh;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 1000;
 }
 
 .map-container {
   height: 100%;
   width: 100%;
+}
+
+.map-container :where(.maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right) {
+  margin-top: 12px;
+}
+
+.map-container :where(.maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right) {
+  margin-bottom: 8px;
+}
+
+.map-fit-btn {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd8d0;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgb(20 33 27 / 15%);
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 32px;
+  z-index: 10;
+}
+
+.map-fit-btn:hover {
+  background: #eef5f0;
+}
+
+.fit-icon {
+  font-size: 1.125rem;
+  line-height: 1;
 }
 
 .empty-state {
