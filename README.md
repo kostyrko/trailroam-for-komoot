@@ -51,6 +51,19 @@ npm test           # Run tests
 npm run check      # Build + package extension
 ```
 
+## Extension permissions
+
+The manifest requests only what is necessary:
+
+| Permission | Reason |
+|---|---|
+| `storage` | IndexedDB (via Dexie.js) — stores activities, routes, settings locally. |
+| `tabs` | Open Strava dashboard in a new tab via `chrome.tabs.create` when sync is triggered. |
+| `https://strava.com/*` | Content script runs on strava.com to fetch same-origin API data during sync. |
+| `https://tiles.openfreemap.org/*` | OpenFreeMap tile server for the default map basemap. |
+
+No `<all_urls>` is used. No unnecessary hosts are requested.
+
 ## Privacy
 
 Activity and GPS route data is stored only in this browser's IndexedDB. No data is uploaded to Trailroam servers. See the **Privacy & Data** section in the app Settings for more details.
