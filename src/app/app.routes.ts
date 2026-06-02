@@ -9,73 +9,92 @@ import { SyncHistoryService } from './storage/sync-history.service';
 
 @Component({
   selector: 'app-settings-page',
+  styles: [`
+    .settings-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    @media (min-width: 800px) {
+      .settings-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .settings-card {
+      margin: 0;
+    }
+  `],
   template: `
     <section class="route-page" aria-labelledby="settings-title">
-      <p class="eyebrow">Settings</p>
       <h1 id="settings-title">Settings</h1>
       <p>Manage local extension data stored in this browser.</p>
 
-      <article class="empty-state" aria-labelledby="sync-data-title">
-        <p class="empty-state-kicker">Sync</p>
-        <h2 id="sync-data-title">Sync activities</h2>
-        <p>Import new Strava activities and their GPS routes.</p>
-        <button class="primary-action" type="button" (click)="syncNewActivities()">Sync activities</button>
-      </article>
+      <div class="settings-cards">
+        <article class="empty-state settings-card" aria-labelledby="sync-data-title">
+          <p class="empty-state-kicker">Sync</p>
+          <h2 id="sync-data-title">Sync activities</h2>
+          <p>Import new Strava activities and their GPS routes.</p>
+          <button class="primary-action" type="button" (click)="syncNewActivities()">Sync activities</button>
+        </article>
 
-      <article class="empty-state" aria-labelledby="sync-routes-title">
-        <p class="empty-state-kicker">Sync</p>
-        <h2 id="sync-routes-title">Sync missing routes</h2>
-        <p>Retry route import for activities that have no GPS route yet.</p>
-        <button class="primary-action" type="button" (click)="syncMissingRoutes()">Sync missing routes</button>
-      </article>
+        <article class="empty-state settings-card" aria-labelledby="sync-routes-title">
+          <p class="empty-state-kicker">Sync</p>
+          <h2 id="sync-routes-title">Sync missing routes</h2>
+          <p>Retry route import for activities that have no GPS route yet.</p>
+          <button class="primary-action" type="button" (click)="syncMissingRoutes()">Sync missing routes</button>
+        </article>
 
-      <article class="empty-state danger-state" aria-labelledby="clear-resync-title">
-        <p class="empty-state-kicker">Local data</p>
-        <h2 id="clear-resync-title">Clear and re-sync</h2>
-        <p>This deletes locally synced activities and route data, then imports them again from Strava. Your settings will be kept.</p>
-        <button
-          class="danger-action"
-          type="button"
-          [disabled]="isClearingLocalData()"
-          (click)="clearAndResync()"
-        >
-          {{ isClearingLocalData() ? 'Clearing...' : 'Clear and re-sync' }}
-        </button>
-      </article>
+        <article class="empty-state danger-state settings-card" aria-labelledby="clear-resync-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="clear-resync-title">Clear and re-sync</h2>
+          <p>This deletes locally synced activities and route data, then imports them again from Strava. Your settings will be kept.</p>
+          <button
+            class="danger-action"
+            type="button"
+            [disabled]="isClearingLocalData()"
+            (click)="clearAndResync()"
+          >
+            {{ isClearingLocalData() ? 'Clearing...' : 'Clear and re-sync' }}
+          </button>
+        </article>
 
-      <article class="empty-state danger-state" aria-labelledby="clear-local-data-title">
-        <p class="empty-state-kicker">Local data</p>
-        <h2 id="clear-local-data-title">Clear synced local data</h2>
-        <p>
-          This removes imported activities, routes, and sync state from this browser. Settings and access state are kept.
-        </p>
-        <button
-          class="danger-action"
-          type="button"
-          [disabled]="isClearingLocalData()"
-          (click)="clearSyncedLocalData()"
-        >
-          {{ isClearingLocalData() ? 'Clearing...' : 'Clear synced local data' }}
-        </button>
+        <article class="empty-state danger-state settings-card" aria-labelledby="clear-local-data-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="clear-local-data-title">Clear synced local data</h2>
+          <p>
+            This removes imported activities, routes, and sync state from this browser. Settings and access state are kept.
+          </p>
+          <button
+            class="danger-action"
+            type="button"
+            [disabled]="isClearingLocalData()"
+            (click)="clearSyncedLocalData()"
+          >
+            {{ isClearingLocalData() ? 'Clearing...' : 'Clear synced local data' }}
+          </button>
 
-        @if (clearLocalDataStatus()) {
-          <p class="route-state" role="status">{{ clearLocalDataStatus() }}</p>
-        }
-      </article>
+          @if (clearLocalDataStatus()) {
+            <p class="route-state" role="status">{{ clearLocalDataStatus() }}</p>
+          }
+        </article>
 
-      <article class="empty-state" aria-labelledby="backup-title">
-        <p class="empty-state-kicker">Local data</p>
-        <h2 id="backup-title">Backup local data</h2>
-        <p>Export your activities, routes, and settings to a JSON file. The backup file may contain GPS route history — store it somewhere private.</p>
-        <button class="primary-action" type="button" (click)="backupLocalData()">Backup</button>
-      </article>
+        <article class="empty-state settings-card" aria-labelledby="backup-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="backup-title">Backup local data</h2>
+          <p>Export your activities, routes, and settings to a JSON file. The backup file may contain GPS route history — store it somewhere private.</p>
+          <button class="primary-action" type="button" (click)="backupLocalData()">Backup</button>
+        </article>
 
-      <article class="empty-state" aria-labelledby="restore-title">
-        <p class="empty-state-kicker">Local data</p>
-        <h2 id="restore-title">Restore local data</h2>
-        <p>Restore your activities, routes, and settings from a previous backup file. This will replace your current local data.</p>
-        <button class="primary-action" type="button" (click)="restoreLocalData()">Restore</button>
-      </article>
+        <article class="empty-state settings-card" aria-labelledby="restore-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="restore-title">Restore local data</h2>
+          <p>Restore your activities, routes, and settings from a previous backup file. This will replace your current local data.</p>
+          <button class="primary-action" type="button" (click)="restoreLocalData()">Restore</button>
+        </article>
+      </div>
 
       <article class="empty-state" aria-labelledby="sync-history-title">
         <div class="history-header">

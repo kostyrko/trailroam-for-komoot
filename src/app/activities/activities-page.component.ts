@@ -87,7 +87,6 @@ function routeStatusLabel(status: string): string {
   selector: 'app-activities-page',
   template: `
     <section class="route-page" aria-labelledby="activities-title">
-      <p class="eyebrow">Activities</p>
       <h1 id="activities-title">Activities</h1>
 
       @if (status() === 'loading') {

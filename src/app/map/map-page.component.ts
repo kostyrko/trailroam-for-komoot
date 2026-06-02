@@ -88,10 +88,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       }
 
     <section class="route-page" aria-labelledby="map-title">
-      <div>
-        <p class="eyebrow">Map</p>
-        <h1 id="map-title">Map</h1>
-      </div>
+      <h1 id="map-title">Map</h1>
 
       <div class="map-filters">
         <div class="filter-group">
