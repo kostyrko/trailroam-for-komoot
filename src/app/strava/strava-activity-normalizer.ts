@@ -12,8 +12,13 @@ export class StravaActivityNormalizer {
     const providerActivityId = String(raw.id);
     const id = `strava:${providerActivityId}`;
     const sportType = raw.sport_type ?? raw.type ?? 'Unknown';
-    const startDate = raw.start_date;
-    const startDateLocal = raw.start_date_local;
+    const startDate = raw.start_time ?? raw.start_date;
+    const startDateLocal = raw.start_date_local_raw !== undefined ? new Date(raw.start_date_local_raw * 1000).toISOString() : raw.start_date_local;
+
+    const distanceMeters = (raw.distance_raw ?? raw.distance) !== undefined ? Number(raw.distance_raw ?? raw.distance) : undefined;
+    const movingTimeSeconds = (raw.moving_time_raw ?? raw.moving_time) !== undefined ? Number(raw.moving_time_raw ?? raw.moving_time) : undefined;
+    const elapsedTimeSeconds = (raw.elapsed_time_raw ?? raw.elapsed_time) !== undefined ? Number(raw.elapsed_time_raw ?? raw.elapsed_time) : undefined;
+    const elevationGain = (raw.total_elevation_gain ?? raw.elevation_gain_raw) !== undefined ? Number(raw.total_elevation_gain ?? raw.elevation_gain_raw) : undefined;
 
     return {
       id,
@@ -24,10 +29,10 @@ export class StravaActivityNormalizer {
       activityCategory: mapSportTypeToCategory(sportType),
       startDate,
       startDateLocal,
-      distanceMeters: raw.distance ?? undefined,
-      movingTimeSeconds: raw.moving_time ?? undefined,
-      elapsedTimeSeconds: raw.elapsed_time ?? undefined,
-      totalElevationGainMeters: raw.total_elevation_gain ?? undefined,
+      distanceMeters: distanceMeters !== undefined && isNaN(distanceMeters) ? undefined : distanceMeters,
+      movingTimeSeconds: movingTimeSeconds !== undefined && isNaN(movingTimeSeconds) ? undefined : movingTimeSeconds,
+      elapsedTimeSeconds: elapsedTimeSeconds !== undefined && isNaN(elapsedTimeSeconds) ? undefined : elapsedTimeSeconds,
+      totalElevationGainMeters: elevationGain !== undefined && isNaN(elevationGain) ? undefined : elevationGain,
       averageSpeedMetersPerSecond: raw.average_speed ?? undefined,
       averageHeartrateBpm: raw.average_heartrate ?? undefined,
       hasRoute: false,

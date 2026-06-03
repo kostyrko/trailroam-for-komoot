@@ -18,6 +18,13 @@ export interface StravaActivityResponse {
   has_heartrate?: boolean;
   /** @deprecated Use sport_type instead */
   type?: string;
+  /** Fields from /athlete/training_activities (content script path) */
+  start_time?: string;
+  start_date_local_raw?: number;
+  distance_raw?: number;
+  moving_time_raw?: number;
+  elapsed_time_raw?: number;
+  elevation_gain_raw?: number;
 }
 
 export interface ActivityListParams {
