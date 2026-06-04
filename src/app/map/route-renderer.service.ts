@@ -156,7 +156,7 @@ export class RouteRendererService {
       type: 'circle',
       source: ROUTES_POINTS_SOURCE_ID,
       filter: ['!', ['has', 'point_count']],
-      minzoom: LINE_MIN_ZOOM,
+      maxzoom: LINE_MIN_ZOOM,
       paint: {
         'circle-color': [
           'match', ['get', 'category'],
