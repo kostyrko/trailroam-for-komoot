@@ -173,7 +173,7 @@ export class RouteRendererService {
       type: 'symbol',
       source: ROUTES_POINTS_SOURCE_ID,
       filter: ['!', ['has', 'point_count']],
-      maxzoom: CLUSTER_MAX_ZOOM,
+      maxzoom: LINE_MIN_ZOOM,
       layout: {
         'text-field': '1',
         'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
