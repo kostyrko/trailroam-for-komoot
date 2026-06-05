@@ -127,10 +127,11 @@ export class RouteRendererService {
       type: 'circle',
       source: ROUTES_POINTS_SOURCE_ID,
       filter: ['has', 'point_count'],
+      maxzoom: LINE_MIN_ZOOM,
       paint: {
         'circle-color': '#1f6f50',
         'circle-opacity': 0.85,
-        'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30],
+        'circle-radius': ['step', ['get', 'point_count'], 17, 10, 20, 50, 24, 100, 29],
         'circle-stroke-color': '#ffffff',
         'circle-stroke-width': 3,
       },
@@ -141,6 +142,7 @@ export class RouteRendererService {
       type: 'symbol',
       source: ROUTES_POINTS_SOURCE_ID,
       filter: ['has', 'point_count'],
+      maxzoom: CLUSTER_MAX_ZOOM,
       layout: {
         'text-field': ['get', 'point_count_abbreviated'],
         'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
@@ -158,19 +160,27 @@ export class RouteRendererService {
       filter: ['!', ['has', 'point_count']],
       maxzoom: LINE_MIN_ZOOM,
       paint: {
-        'circle-color': [
-          'match', ['get', 'category'],
-          'ride', '#1f6f50',
-          'run', '#2d7fb8',
-          'walk', '#b87a2d',
-          'hike', '#8b5e3c',
-          'water', '#3c9bb8',
-          'paddling', '#3ca8a8',
-          'winter', '#8ba8c8',
-          '#63746a',
-        ],
-        'circle-opacity': 0.8,
-        'circle-radius': 5,
+        'circle-color': '#1f6f50',
+        'circle-opacity': 0.85,
+        'circle-radius': 17,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 3,
+      },
+    });
+
+    map.addLayer({
+      id: 'trailroam-route-single-label',
+      type: 'symbol',
+      source: ROUTES_POINTS_SOURCE_ID,
+      filter: ['!', ['has', 'point_count']],
+      maxzoom: CLUSTER_MAX_ZOOM,
+      layout: {
+        'text-field': '1',
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 11,
+      },
+      paint: {
+        'text-color': '#ffffff',
       },
     });
 
@@ -257,11 +267,14 @@ export class RouteRendererService {
       }).catch(() => {});
     };
 
-    const onUnclusteredClick = (event: MapLayerMouseEvent) => {
-      const activityId = event.features?.[0]?.properties?.['activityId'];
+    const onSingleClick = (event: MapLayerMouseEvent) => {
+      const feature = event.features?.[0];
+      if (!feature) { return; }
+      const activityId = feature.properties?.['activityId'];
       if (typeof activityId !== 'string') { return; }
       const selectedRoute = this.routesLookup.get(activityId);
       if (!selectedRoute) { return; }
+      this.fitToRoute(selectedRoute.coordinates);
       map.setFilter(ROUTES_SELECTED_LAYER_ID, this.buildSelectedRouteFilter(selectedRoute.activityId));
       this.onRouteSelected?.(selectedRoute);
     };
@@ -279,7 +292,7 @@ export class RouteRendererService {
     const onPointerLeave = () => { map.getCanvas().style.cursor = ''; };
 
     map.on('click', CLUSTER_LAYER_ID, onClusterClick);
-    map.on('click', UNCLUSTERED_POINT_LAYER_ID, onUnclusteredClick);
+    map.on('click', UNCLUSTERED_POINT_LAYER_ID, onSingleClick);
     map.on('click', ROUTES_LAYER_ID, onLineClick);
     map.on('mouseenter', CLUSTER_LAYER_ID, onPointerEnter);
     map.on('mouseleave', CLUSTER_LAYER_ID, onPointerLeave);
@@ -290,7 +303,7 @@ export class RouteRendererService {
 
     this.mapEventListeners = [
       () => map.off('click', CLUSTER_LAYER_ID, onClusterClick),
-      () => map.off('click', UNCLUSTERED_POINT_LAYER_ID, onUnclusteredClick),
+      () => map.off('click', UNCLUSTERED_POINT_LAYER_ID, onSingleClick),
       () => map.off('click', ROUTES_LAYER_ID, onLineClick),
       () => map.off('mouseenter', CLUSTER_LAYER_ID, onPointerEnter),
       () => map.off('mouseleave', CLUSTER_LAYER_ID, onPointerLeave),
