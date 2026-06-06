@@ -1,4 +1,4 @@
-export const DATABASE_SCHEMA_VERSION = 2;
+export const DATABASE_SCHEMA_VERSION = 3;
 export const DEFAULT_RECORD_ID = 'default';
 
 export type ActivityCategory =
@@ -57,6 +57,8 @@ export interface ActivityRouteRecord {
   coordinates: [number, number][];
   pointCount: number;
   bounds?: RouteBounds;
+  elevations?: number[];
+  cumulativeDistances?: number[];
   simplifiedCoordinates?: [number, number][];
   simplifiedPointCount?: number;
   hasSimplifiedGeometry?: boolean;

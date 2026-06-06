@@ -125,11 +125,21 @@ export class App {
           }
         }
         if (validCoords.length >= 2) {
+          const elevations: number[] | undefined =
+            rawRoute.altitude && Array.isArray(rawRoute.altitude.data)
+              ? rawRoute.altitude.data
+              : undefined;
+          const cumulativeDistances: number[] | undefined =
+            rawRoute.distance && Array.isArray(rawRoute.distance.data)
+              ? rawRoute.distance.data
+              : undefined;
           const route = {
             activityId: 'strava:' + activityId,
             providerActivityId: activityId,
             coordinates: validCoords,
             pointCount: validCoords.length,
+            elevations,
+            cumulativeDistances,
             syncedAt: now,
             updatedAt: now,
           };

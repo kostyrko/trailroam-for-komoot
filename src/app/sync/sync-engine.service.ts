@@ -188,7 +188,7 @@ export class SyncEngineService {
       routeItems.push({
         activityId: a.id,
         providerActivityId: a.providerActivityId,
-        fetchResult: { success: true, latlng: [] },
+        fetchResult: { success: true, coordinates: [] },
         skipReason: undefined,
       });
     }

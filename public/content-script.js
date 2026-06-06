@@ -20,7 +20,7 @@ async function fetchActivityList(page, perPage) {
 }
 
 async function fetchActivityRoute(activityId) {
-  var url = '/api/v3/activities/' + activityId + '/streams?keys=latlng&key_by_type=true';
+  var url = '/api/v3/activities/' + activityId + '/streams?keys=latlng,altitude,distance&key_by_type=true';
   var response = await fetch(url);
   if (!response.ok) return null;
   return response.json();

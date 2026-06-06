@@ -9,6 +9,8 @@ export const ROUTES_SELECTED_LAYER_ID = 'trailroam-route-selected';
 export const CLUSTER_LAYER_ID = 'trailroam-route-clusters';
 export const CLUSTER_COUNT_LAYER_ID = 'trailroam-route-cluster-count';
 export const UNCLUSTERED_POINT_LAYER_ID = 'trailroam-route-point';
+export const HOVER_POINT_SOURCE_ID = 'trailroam-hover-point';
+export const HOVER_POINT_LAYER_ID = 'trailroam-hover-point-layer';
 
 const CLUSTER_MAX_ZOOM = 12;
 const LINE_MIN_ZOOM = 9;
@@ -184,7 +186,43 @@ export class RouteRendererService {
       },
     });
 
+    map.addSource(HOVER_POINT_SOURCE_ID, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+
+    map.addLayer({
+      id: HOVER_POINT_LAYER_ID,
+      type: 'circle',
+      source: HOVER_POINT_SOURCE_ID,
+      paint: {
+        'circle-color': '#d15b2f',
+        'circle-radius': 5,
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2,
+      },
+    });
+
     this.addEventListeners();
+  }
+
+  showHoverPoint(lng: number, lat: number): void {
+    const map = this.map;
+    if (!map) { return; }
+    const source = map.getSource(HOVER_POINT_SOURCE_ID) as GeoJSONSource;
+    if (!source) { return; }
+    source.setData({
+      type: 'FeatureCollection',
+      features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: {} }],
+    });
+  }
+
+  clearHoverPoint(): void {
+    const map = this.map;
+    if (!map) { return; }
+    const source = map.getSource(HOVER_POINT_SOURCE_ID) as GeoJSONSource;
+    if (!source) { return; }
+    source.setData({ type: 'FeatureCollection', features: [] });
   }
 
   updateRoutes(routes: MapRouteFeature[]): void {

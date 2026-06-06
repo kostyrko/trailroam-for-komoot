@@ -38,8 +38,14 @@ export type ActivityFetchResult =
   | { success: true; activities: StravaActivityResponse[]; status: SessionStatus }
   | { success: false; errorCode: string; status: SessionStatus };
 
+export interface RouteStreamsData {
+  coordinates: [number, number][];
+  elevations?: number[];
+  cumulativeDistances?: number[];
+}
+
 export type RouteFetchResult =
-  | { success: true; latlng: [number, number][] }
+  | { success: true } & RouteStreamsData
   | { success: false; errorCode: string }
   | { success: false; errorCode: 'NO_GPS_ROUTE' }
   | { success: false; errorCode: 'ACTIVITY_ROUTE_FETCH_FAILED' }
@@ -110,7 +116,7 @@ export class StravaSessionService {
   }
 
   async fetchActivityRoute(activityId: number): Promise<RouteFetchResult> {
-    const url = `${environment.stravaApiBase}${STRAVA_STREAMS_PATH}/${activityId}/streams?keys=latlng&key_by_type=true`;
+    const url = `${environment.stravaApiBase}${STRAVA_STREAMS_PATH}/${activityId}/streams?keys=latlng,altitude,distance&key_by_type=true`;
 
     try {
       const response = await fetch(url, { credentials: 'include' });
@@ -139,7 +145,17 @@ export class StravaSessionService {
         ([lat, lng]: [number, number]) => [lng, lat] as [number, number],
       );
 
-      return { success: true, latlng: coordinates };
+      const elevations: number[] | undefined =
+        data?.altitude && Array.isArray(data.altitude.data)
+          ? data.altitude.data
+          : undefined;
+
+      const cumulativeDistances: number[] | undefined =
+        data?.distance && Array.isArray(data.distance.data)
+          ? data.distance.data
+          : undefined;
+
+      return { success: true, coordinates, elevations, cumulativeDistances };
     } catch {
       return { success: false, errorCode: 'ACTIVITY_ROUTE_FETCH_FAILED' };
     }

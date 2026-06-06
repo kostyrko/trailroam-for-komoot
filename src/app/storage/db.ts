@@ -30,6 +30,15 @@ export class TrailroamDatabase extends Dexie {
       access_state: 'id, status, updatedAt',
     });
 
+    this.version(2).stores({
+      activities: 'id, providerActivityId, startDate, sportType, activityCategory, hasRoute, routeSyncStatus',
+      activity_routes: 'activityId, providerActivityId, syncedAt, pointCount',
+      sync_state: 'id, status, lastSuccessfulSyncAt',
+      settings: 'id, mapProvider, updatedAt',
+      access_state: 'id, status, updatedAt',
+      sync_history: 'id, trigger, completedAt',
+    });
+
     this.version(DATABASE_SCHEMA_VERSION).stores({
       activities: 'id, providerActivityId, startDate, sportType, activityCategory, hasRoute, routeSyncStatus',
       activity_routes: 'activityId, providerActivityId, syncedAt, pointCount',

@@ -11,6 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MapLibreMapComponent } from './maplibre-map.component';
+import { ElevationProfileComponent } from './elevation-profile.component';
 import { type MapRouteFeature } from './mock-routes';
 import { FiltersService, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
@@ -69,7 +70,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
 
 @Component({
   selector: 'app-map-page',
-  imports: [MapLibreMapComponent],
+  imports: [MapLibreMapComponent, ElevationProfileComponent],
   template: `
       @if (performanceWarning(); as warning) {
         <article class="notice-bar warning-state" role="alert">
@@ -211,6 +212,15 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                 </dd>
               </div>
             </dl>
+            @if (mapFullscreen()) {
+              <app-elevation-profile
+                [elevations]="route.route.elevations"
+                [cumulativeDistances]="route.route.cumulativeDistances"
+                [coordinates]="route.route.coordinates"
+                [totalDistanceMeters]="route.activity.distanceMeters"
+                (hoveredPosition)="onElevationHover($event)"
+              />
+            }
           </article>
         }
       }
@@ -766,8 +776,17 @@ export class MapPage implements AfterViewInit {
   protected clearSelectedRoute(): void {
     this.selectedMapRoute.set(null);
     this.routeRendererService.deselectRoute();
+    this.routeRendererService.clearHoverPoint();
     if (this.selectedActivityId()) {
       this.router.navigate(['/map']);
+    }
+  }
+
+  protected onElevationHover(position: { lng: number; lat: number } | null): void {
+    if (position) {
+      this.routeRendererService.showHoverPoint(position.lng, position.lat);
+    } else {
+      this.routeRendererService.clearHoverPoint();
     }
   }
 

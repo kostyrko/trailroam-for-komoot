@@ -20,7 +20,7 @@ export class StravaRouteNormalizer {
       return { success: false, errorCode: fetchResult.errorCode as 'NO_GPS_ROUTE' };
     }
 
-    const normalized = normalizeRouteCoordinates(fetchResult.latlng);
+    const normalized = normalizeRouteCoordinates(fetchResult.coordinates);
 
     if (!normalized.valid) {
       const errorCode = normalized.reason === 'empty_route' ? 'EMPTY_ROUTE' : 'INVALID_COORDINATES';
@@ -35,6 +35,8 @@ export class StravaRouteNormalizer {
       coordinates: normalized.coordinates,
       pointCount: normalized.coordinates.length,
       bounds: normalized.bounds,
+      elevations: fetchResult.elevations,
+      cumulativeDistances: fetchResult.cumulativeDistances,
       syncedAt: now,
       updatedAt: now,
     };
