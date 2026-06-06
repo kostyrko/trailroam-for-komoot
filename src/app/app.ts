@@ -263,21 +263,10 @@ export class App {
 
   protected syncMissingRoutes(): void {
     this.closeSyncMenu();
-    const startSync = async () => {
-      const result = await this.syncEngine.syncMissingRoutes();
-      await this.showSyncResult(result);
-      await this.syncHistoryService.record('sync_missing_routes', {
-        importedCount: result.importedCount,
-        updatedCount: result.updatedCount,
-        routesSyncedCount: result.routesSyncedCount,
-        skippedCount: result.skippedCount,
-        failedCount: result.failedCount,
-        rateLimitedCount: result.rateLimitedCount,
-        status: result.errorMessage ? 'failed' : 'completed',
-        errorMessage: result.errorMessage,
-      });
-    };
-    startSync();
+    const c = (globalThis as any).chrome;
+    if (c?.tabs?.create) {
+      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSyncMissing=true' });
+    }
   }
 
   protected async clearAndResync(): Promise<void> {
