@@ -34,9 +34,6 @@ const PLOT_HEIGHT = CHART_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
         @if (crosshairX(); as cx) {
           <line [attr.x1]="cx" y1="6" [attr.x2]="cx" y2="102" stroke="#14211b" stroke-width="1" stroke-dasharray="3,2" />
           @if (hoverElevation(); as el) {
-            <circle [attr.cx]="cx" [attr.cy]="el" r="3" fill="#1f6f50" stroke="#ffffff" stroke-width="1.5" />
-          }
-          @if (hoverElevation(); as el) {
             <g>
               <rect [attr.x]="cx - 38" y="1" width="76" height="18" rx="3" fill="#14211b" fill-opacity="0.85" />
               @if (hoverDistance(); as dist) {
