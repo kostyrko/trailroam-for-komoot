@@ -180,10 +180,10 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
           <article class="route-detail" [class.route-detail-overlay]="mapFullscreen()" [class.show-profile-hint]="showProfileHint()" aria-label="Selected route details">
             <div class="route-detail-header">
               <h2 class="route-detail-title">
-                <a class="route-title-link" (click)="navigateToActivity(route.activity)" href="javascript:void(0)">
+                <button class="route-title-link" type="button" (click)="navigateToActivity(route.activity)">
                   {{ route.name }}
                   <svg class="route-title-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </a>
+                </button>
               </h2>
               <div class="detail-menu-wrapper">
                 <button class="detail-menu-trigger" type="button" (click)="toggleDetailMenu($event)" aria-haspopup="menu" [attr.aria-expanded]="detailMenuOpen()">⋮</button>
@@ -234,10 +234,10 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
               <div class="stat">
                 <dt class="stat-label">Strava</dt>
                 <dd class="stat-value">
-                  <a class="strava-link" (click)="openOnStrava($event, route.activity)" href="javascript:void(0)">
+                  <button class="strava-link" type="button" (click)="openOnStrava($event, route.activity)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     Open in Strava
-                  </a>
+                  </button>
                 </dd>
               </div>
             </dl>
@@ -316,13 +316,17 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
 
     .route-title-link {
       align-items: center;
+      background: transparent;
+      border: 0;
       color: #14211b;
       cursor: pointer;
       display: inline-flex;
+      font: inherit;
+      font-size: inherit;
       gap: 4px;
       max-width: 100%;
       overflow: hidden;
-      text-decoration: none;
+      padding: 0;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -484,13 +488,16 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
 
     .strava-link {
       align-items: center;
+      background: transparent;
+      border: 0;
       color: #1f6f50;
       cursor: pointer;
       display: inline-flex;
+      font: inherit;
       font-size: 0.8125rem;
       font-weight: 600;
       gap: 4px;
-      text-decoration: none;
+      padding: 0;
     }
 
     .strava-link:hover {
