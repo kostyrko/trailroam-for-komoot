@@ -23,10 +23,19 @@ function formatElevation(meters: number | undefined): string {
   return `${meters.toFixed(0)} m`;
 }
 
-function computeSpeed(metersPerSecond: number | undefined, distanceMeters: number | undefined, movingTimeSeconds: number | undefined): number | undefined {
+function computeSpeed(
+  metersPerSecond: number | undefined,
+  distanceMeters: number | undefined,
+  movingTimeSeconds: number | undefined,
+): number | undefined {
   if (metersPerSecond !== undefined && metersPerSecond !== 0) { return metersPerSecond; }
   if (distanceMeters && movingTimeSeconds) { return distanceMeters / movingTimeSeconds; }
   return undefined;
+}
+
+function formatSpeedKmh(speedMetersPerSecond: number | undefined): string {
+  if (speedMetersPerSecond === undefined || speedMetersPerSecond === 0) { return '—'; }
+  return `${(speedMetersPerSecond * 3.6).toFixed(1)} km/h`;
 }
 
 function formatSpeed(metersPerSecond: number | undefined): string {
@@ -37,6 +46,14 @@ function formatSpeed(metersPerSecond: number | undefined): string {
 function formatHeartrate(bpm: number | undefined): string {
   if (bpm === undefined || bpm === 0) { return '—'; }
   return `${bpm.toFixed(0)} bpm`;
+}
+
+function formatDurationHours(seconds: number | undefined): string {
+  if (seconds === undefined || seconds === 0) { return '—'; }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) { return `${h}h ${m}m`; }
+  return `${m}m`;
 }
 
 function formatDuration(seconds: number | undefined): string {
@@ -190,6 +207,10 @@ function routeStatusLabel(status: string): string {
           </div>
         </div>
 
+        <p class="summary-bar">
+          {{ summaryText() }}
+        </p>
+
         <p class="activities-count">
           @if (totalFilteredCount() > pageSize()) {
             Showing page {{ currentPage() }} of {{ totalPages() }} · {{ totalFilteredCount() }} activities
@@ -298,6 +319,14 @@ function routeStatusLabel(status: string): string {
     </section>
   `,
   styles: [`
+    .summary-bar {
+      color: #314b3f;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 0;
+    }
+
     .activities-count {
       color: #4f6f5d;
       font-size: 0.875rem;
@@ -869,6 +898,50 @@ export class ActivitiesPageComponent {
 
   protected readonly totalFilteredCount = computed(() => this.allFiltered().length);
 
+  protected readonly summaryText = computed(() => {
+    const all = this.allFiltered();
+    if (all.length === 0) { return '0 activities'; }
+
+    const count = all.length;
+
+    const totalDistanceMeters = all.reduce((sum, a) => sum + (a.distanceMeters ?? 0), 0);
+    const distanceKm = totalDistanceMeters / 1000;
+
+    const totalMovingSeconds = all.reduce((sum, a) => sum + (a.movingTimeSeconds ?? 0), 0);
+
+    const activitiesWithSpeed = all.filter((a) => {
+      const speed = computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds);
+      return speed !== undefined;
+    });
+    const avgSpeedKmh = (() => {
+      if (activitiesWithSpeed.length === 0) { return null; }
+      const speedsMs = activitiesWithSpeed.map((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds)!);
+      const avgMs = speedsMs.reduce((s, v) => s + v, 0) / speedsMs.length;
+      return avgMs * 3.6;
+    })();
+
+    const parts: string[] = [];
+    parts.push(`${count} ${count === 1 ? 'activity' : 'activities'}`);
+
+    if (totalDistanceMeters > 0) {
+      if (distanceKm >= 100) {
+        parts.push(`${distanceKm.toFixed(0)} km`);
+      } else {
+        parts.push(`${distanceKm.toFixed(2)} km`);
+      }
+    }
+
+    if (totalMovingSeconds > 0) {
+      parts.push(formatDurationHours(totalMovingSeconds));
+    }
+
+    if (avgSpeedKmh !== null) {
+      parts.push(`${avgSpeedKmh.toFixed(1)} km/h avg`);
+    }
+
+    return parts.join(' · ');
+  });
+
   constructor() {
     this.loadPage(1);
     globalThis.addEventListener('click', () => this.closeAllMenus());
@@ -1028,6 +1101,8 @@ export class ActivitiesPageComponent {
   protected formatDistance = formatDistance;
   protected formatSpeed = formatSpeed;
   protected formatDuration = formatDuration;
+  protected formatDurationHours = formatDurationHours;
+  protected formatSpeedKmh = formatSpeedKmh;
   protected formatDate = formatDate;
   protected routeStatusLabel = routeStatusLabel;
   protected formatDateInput = formatDateInput;
