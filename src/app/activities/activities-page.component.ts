@@ -5,6 +5,7 @@ import { map } from 'rxjs';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { FiltersService, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import { ToastService } from '../shared/toast.service';
+import { ConfirmService } from '../shared/confirm.service';
 import { GpxExportService } from '../shared/gpx-export.service';
 import { StravaSessionService } from '../strava/strava-session.service';
 import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
@@ -219,10 +220,30 @@ function routeStatusLabel(status: string): string {
           }
         </p>
 
+        @if (selectionCount() > 0) {
+          <div class="selection-bar">
+            <span class="selection-count">{{ selectionCount() }} selected</span>
+            <span class="selection-actions">
+              <button class="selection-btn" type="button" (click)="downloadSelectedGpx()">Download GPX</button>
+              <button class="selection-btn selection-btn-danger" type="button" (click)="deleteSelected()">Delete</button>
+            </span>
+            <button class="selection-clear" type="button" (click)="clearSelection()">×</button>
+          </div>
+        }
+
         <div class="activities-table-wrap">
           <table class="activities-table" aria-label="Imported activities">
             <thead>
               <tr>
+                <th scope="col" class="col-checkbox">
+                  <input
+                    type="checkbox"
+                    [checked]="allPageSelected()"
+                    [indeterminate]="!allPageSelected() && selectionCount() > 0"
+                    (change)="toggleSelectAllPage()"
+                    aria-label="Select all visible activities"
+                  />
+                </th>
                 <th scope="col" class="sortable" (click)="onSort('date')">Date{{ sortIndicator('date') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('name')">Name{{ sortIndicator('name') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('type')">Type{{ sortIndicator('type') }}</th>
@@ -235,7 +256,15 @@ function routeStatusLabel(status: string): string {
             </thead>
             <tbody>
               @for (activity of filteredActivities(); track activity.id) {
-                <tr class="activity-row" [class.clickable]="activity.hasRoute" [class.no-route]="!activity.hasRoute" [class.focus-highlight]="highlightActivityId() === activity.id" [attr.data-activity-id]="activity.id" (click)="navigateToActivity(activity)">
+                <tr class="activity-row" [class.clickable]="activity.hasRoute" [class.no-route]="!activity.hasRoute" [class.focus-highlight]="highlightActivityId() === activity.id" [class.row-selected]="selectedIds().has(activity.id)" [attr.data-activity-id]="activity.id" (click)="navigateToActivity(activity)">
+                  <td class="cell-checkbox" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      [checked]="selectedIds().has(activity.id)"
+                      (change)="toggleSelection(activity.id)"
+                      [attr.aria-label]="'Select ' + activity.name"
+                    />
+                  </td>
                   <td class="cell-date">{{ formatDate(activity.startDate) }}</td>
                   <td class="cell-name">{{ activity.name }}</td>
                   <td><span class="category-tag"><span class="cat-dot" [style.background]="CATEGORY_COLORS[activity.activityCategory]"></span>{{ formatSportType(activity.sportType) }}</span></td>
@@ -325,6 +354,98 @@ function routeStatusLabel(status: string): string {
       font-weight: 600;
       margin-top: 14px;
       margin-bottom: 0;
+    }
+
+    .selection-bar {
+      align-items: center;
+      background: #e6f7ef;
+      border: 1px solid #b8d9c6;
+      border-radius: 8px;
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 10px 14px;
+    }
+
+    .selection-count {
+      color: #1f6f50;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .selection-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .selection-btn {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 6px;
+      color: #14211b;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      min-height: 32px;
+      padding: 5px 12px;
+    }
+
+    .selection-btn:hover {
+      background: #eef5f0;
+    }
+
+    .selection-btn-danger {
+      color: #8f2d22;
+    }
+
+    .selection-btn-danger:hover {
+      background: #fdf0ee;
+    }
+
+    .selection-clear {
+      background: transparent;
+      border: 0;
+      color: #63746a;
+      cursor: pointer;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1;
+      min-height: 28px;
+      min-width: 28px;
+      padding: 0;
+    }
+
+    .selection-clear:hover {
+      color: #14211b;
+    }
+
+    .col-checkbox {
+      width: 48px;
+      text-align: center;
+    }
+
+    .col-checkbox input[type="checkbox"] {
+      cursor: pointer;
+      height: 16px;
+      width: 16px;
+    }
+
+    .cell-checkbox {
+      padding: 4px 8px;
+      text-align: center;
+      width: 48px;
+    }
+
+    .cell-checkbox input[type="checkbox"] {
+      cursor: pointer;
+      height: 16px;
+      width: 16px;
+    }
+
+    .row-selected {
+      background: #eef9f3 !important;
     }
 
     .activities-count {
@@ -811,6 +932,7 @@ export class ActivitiesPageComponent {
   private readonly stravaSessionService = inject(StravaSessionService);
   private readonly routeNormalizer = inject(StravaRouteNormalizer);
   private readonly gpxExportService = inject(GpxExportService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly activatedRoute = inject(ActivatedRoute);
 
   private readonly focusActivityId = toSignal(
@@ -831,6 +953,7 @@ export class ActivitiesPageComponent {
   protected readonly filterMenuOpen = signal(false);
   protected readonly pageSizeMenuOpen = signal(false);
   protected readonly openMenuId = signal<string | null>(null);
+  protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly menuStyle = signal<Record<string, string>>({});
 
   private readonly filtersService = inject(FiltersService);
@@ -898,6 +1021,15 @@ export class ActivitiesPageComponent {
 
   protected readonly totalFilteredCount = computed(() => this.allFiltered().length);
 
+  protected readonly selectionCount = computed(() => this.selectedIds().size);
+
+  protected readonly allPageSelected = computed(() => {
+    const page = this.filteredActivities();
+    if (!page || page.length === 0) { return false; }
+    const ids = this.selectedIds();
+    return page.every((a) => ids.has(a.id));
+  });
+
   protected readonly summaryText = computed(() => {
     const all = this.allFiltered();
     if (all.length === 0) { return '0 activities'; }
@@ -957,16 +1089,80 @@ export class ActivitiesPageComponent {
   protected onPageSizeChange(size: number): void {
     this.pageSize.set(size);
     this.currentPage.set(1);
+    this.clearSelection();
+  }
+
+  protected clearSelection(): void {
+    this.selectedIds.set(new Set());
+  }
+
+  protected toggleSelection(id: string): void {
+    this.selectedIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
+  }
+
+  protected toggleSelectAllPage(): void {
+    const page = this.filteredActivities();
+    if (!page) { return; }
+    const allSelected = this.allPageSelected();
+    this.selectedIds.update((ids) => {
+      const next = new Set(ids);
+      for (const a of page) {
+        if (allSelected) { next.delete(a.id); } else { next.add(a.id); }
+      }
+      return next;
+    });
+  }
+
+  protected async downloadSelectedGpx(): Promise<void> {
+    const ids = this.selectedIds();
+    const all = this.allFiltered();
+    const selected = all.filter((a) => ids.has(a.id));
+    const result = await this.gpxExportService.exportActivitiesAsZip(selected);
+    this.clearSelection();
+    if (result.exported > 0 && result.skipped > 0) {
+      this.toastService.show(`Exported ${result.exported} GPX file(s) as zip, ${result.skipped} skipped (no route).`);
+    } else if (result.exported > 0) {
+      this.toastService.show(`Exported ${result.exported} GPX file(s) as zip.`);
+    } else {
+      this.toastService.show('No GPS routes available for the selected activities.');
+    }
+  }
+
+  protected async deleteSelected(): Promise<void> {
+    const count = this.selectionCount();
+    if (count === 0) { return; }
+    const confirmed = await this.confirmService.confirm({
+      title: `Delete ${count} selected ${count === 1 ? 'activity' : 'activities'}?`,
+      message: `${count} ${count === 1 ? 'activity has' : 'activities have'} been selected for deletion. This will remove all selected activities and their GPS routes from the local database. Strava data is not affected.`,
+      confirmLabel: `Delete ${count} ${count === 1 ? 'activity' : 'activities'}`,
+      danger: true,
+    });
+    if (!confirmed) { return; }
+    const ids = this.selectedIds();
+    await Promise.all([
+      ...Array.from(ids).map((id) => this.repositories.activities.delete(id)),
+      ...Array.from(ids).map((id) => this.repositories.activityRoutes.delete(id)),
+    ]);
+    this.activities.update((items) => items?.filter((a) => !ids.has(a.id)) ?? null);
+    this.totalCount.update((c) => Math.max(0, c - ids.size));
+    this.clearSelection();
+    this.toastService.show(`Deleted ${count} ${count === 1 ? 'activity' : 'activities'}.`);
   }
 
   protected onSportTypeChange(value: string): void {
     this.sportTypeFilter.set(value === '' ? null : value);
     this.filterMenuOpen.set(false);
+    this.clearSelection();
   }
 
   protected onCategoryFilterChange(category: ActivityCategory): void {
     this.sportTypeFilter.set('__cat__' + category);
     this.filterMenuOpen.set(false);
+    this.clearSelection();
   }
 
   protected toggleFilterMenu(): void {
@@ -995,6 +1191,7 @@ export class ActivitiesPageComponent {
     if (page < 1 || page > this.totalPages()) { return; }
     this.currentPage.set(page);
     this.loadPage(page);
+    this.clearSelection();
   }
 
   protected navigateToActivity(activity: ActivityRecord): void {
@@ -1107,9 +1304,9 @@ export class ActivitiesPageComponent {
   protected routeStatusLabel = routeStatusLabel;
   protected formatDateInput = formatDateInput;
   protected formatSportType = formatSportType;
-  protected onDateFromChange = this.filtersService.setDateFrom.bind(this.filtersService);
-  protected onDateToChange = this.filtersService.setDateTo.bind(this.filtersService);
-  protected onNameSearchChange = this.filtersService.setNameSearch.bind(this.filtersService);
+  protected onDateFromChange = (v: string) => { this.filtersService.setDateFrom(v); this.clearSelection(); };
+  protected onDateToChange = (v: string) => { this.filtersService.setDateTo(v); this.clearSelection(); };
+  protected onNameSearchChange = (v: string) => { this.filtersService.setNameSearch(v); this.clearSelection(); };
 
   private async loadPage(page: number): Promise<void> {
     this.status.set('loading');

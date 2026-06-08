@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import JSZip from 'jszip';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import type { ActivityRecord, ActivityRouteRecord } from '../storage/storage.models';
 
@@ -53,6 +54,19 @@ function triggerDownload(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+function triggerZipDownload(zip: JSZip, filename: string): void {
+  zip.generateAsync({ type: 'blob' }).then((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
 @Injectable({ providedIn: 'root' })
 export class GpxExportService {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
@@ -71,5 +85,32 @@ export class GpxExportService {
     const filename = `${slugify(activity.name)}.gpx`;
     triggerDownload(gpx, filename);
     return { success: true };
+  }
+
+  async exportActivitiesAsZip(activities: ActivityRecord[]): Promise<{ exported: number; skipped: number }> {
+    const zip = new JSZip();
+    let exported = 0;
+    let skipped = 0;
+    for (const activity of activities) {
+      if (!activity.hasRoute || activity.routeSyncStatus !== 'route_synced') {
+        skipped++;
+        continue;
+      }
+      const route = await this.repositories.activityRoutes.get(activity.id);
+      if (!route || route.coordinates.length < 2) {
+        skipped++;
+        continue;
+      }
+      const gpx = buildGpx(activity, route);
+      const filename = `${slugify(activity.name)}.gpx`;
+      zip.file(filename, gpx);
+      exported++;
+    }
+    if (exported === 0) {
+      return { exported: 0, skipped };
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    triggerZipDownload(zip, `trailroam-export-${timestamp}.zip`);
+    return { exported, skipped };
   }
 }
