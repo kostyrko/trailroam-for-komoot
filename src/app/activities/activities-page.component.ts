@@ -1,4 +1,15 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  ride: '🚴',
+  run: '🏃',
+  walk: '🚶',
+  hike: '🥾',
+  water: '🏊',
+  paddling: '🛶',
+  winter: '⛷️',
+  other: '🏋️',
+};
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -179,38 +190,62 @@ function routeStatusLabel(status: string): string {
                 <button class="filter-clear" type="button" (click)="onSportTypeChange('')">Clear</button>
               }
             </div>
+            <div class="filter-group">
+              <span class="filter-label">Dates</span>
+              <div class="custom-select" tabindex="0" (click)="datePresetOpen.set(!datePresetOpen())" (keydown.enter)="datePresetOpen.set(!datePresetOpen())" (blur)="datePresetOpen.set(false)">
+                <span class="custom-select-trigger">
+                  {{ datePresetLabel() }}<span class="select-arrow">▾</span>
+                </span>
+                @if (datePresetOpen()) {
+                  <ul class="custom-select-options" (mousedown)="$event.preventDefault()">
+                    <li role="option" (click)="applyDatePreset('all')" [class.active]="datePreset() === 'all'">All dates</li>
+                    <li role="option" (click)="applyDatePreset('7d')" [class.active]="datePreset() === '7d'">Last 7 days</li>
+                    <li role="option" (click)="applyDatePreset('30d')" [class.active]="datePreset() === '30d'">Last 30 days</li>
+                    <li role="option" (click)="applyDatePreset('year')" [class.active]="datePreset() === 'year'">This year</li>
+                    <li role="option" (click)="applyDatePreset('custom')" [class.active]="datePreset() === 'custom'">Custom range</li>
+                  </ul>
+                }
+              </div>
+            </div>
           </div>
-          <div class="filter-row">
-            <label class="filter-group">
-              <span class="filter-label">From</span>
-              <input
-                class="filter-input"
-                type="date"
-                [value]="formatDateInput(dateFrom())"
-                (change)="onDateFromChange($any($event.target).value)"
-              />
-              @if (dateFrom()) {
-                <button class="filter-clear" type="button" (click)="onDateFromChange('')">Clear</button>
-              }
-            </label>
-            <label class="filter-group">
-              <span class="filter-label">To</span>
-              <input
-                class="filter-input"
-                type="date"
-                [value]="formatDateInput(dateTo())"
-                (change)="onDateToChange($any($event.target).value)"
-              />
-              @if (dateTo()) {
-                <button class="filter-clear" type="button" (click)="onDateToChange('')">Clear</button>
-              }
-            </label>
-          </div>
+          @if (datePreset() === 'custom') {
+            <div class="filter-row">
+              <label class="filter-group">
+                <span class="filter-label">From</span>
+                <input
+                  class="filter-input"
+                  type="date"
+                  [value]="formatDateInput(dateFrom())"
+                  (change)="onDateFromChange($any($event.target).value)"
+                />
+                @if (dateFrom()) {
+                  <button class="filter-clear" type="button" (click)="onDateFromChange('')">Clear</button>
+                }
+              </label>
+              <label class="filter-group">
+                <span class="filter-label">To</span>
+                <input
+                  class="filter-input"
+                  type="date"
+                  [value]="formatDateInput(dateTo())"
+                  (change)="onDateToChange($any($event.target).value)"
+                />
+                @if (dateTo()) {
+                  <button class="filter-clear" type="button" (click)="onDateToChange('')">Clear</button>
+                }
+              </label>
+            </div>
+          }
         </div>
 
-        <p class="summary-bar">
-          {{ summaryText() }}
-        </p>
+        <div class="stat-cards">
+          @for (card of statCards(); track card.label) {
+            <div class="stat-card">
+              <span class="stat-card-value">{{ card.value }}</span>
+              <span class="stat-card-label">{{ card.label }}</span>
+            </div>
+          }
+        </div>
 
         <p class="activities-count">
           @if (totalFilteredCount() > pageSize()) {
@@ -224,8 +259,18 @@ function routeStatusLabel(status: string): string {
           <div class="selection-bar">
             <span class="selection-count">{{ selectionCount() }} selected</span>
             <span class="selection-actions">
-              <button class="selection-btn" type="button" (click)="downloadSelectedGpx()">Download GPX</button>
-              <button class="selection-btn selection-btn-danger" type="button" (click)="deleteSelected()">Delete</button>
+              <button class="selection-btn" type="button" (click)="downloadSelectedGpx()">
+                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download GPX
+              </button>
+              <button class="selection-btn" type="button" (click)="viewSelectedOnMap()">
+                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                View on Map
+              </button>
+              <button class="selection-btn selection-btn-danger" type="button" (click)="deleteSelected()">
+                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Delete
+              </button>
             </span>
             <button class="selection-clear" type="button" (click)="clearSelection()">×</button>
           </div>
@@ -265,10 +310,10 @@ function routeStatusLabel(status: string): string {
                       [attr.aria-label]="'Select ' + activity.name"
                     />
                   </td>
-                  <td class="cell-date">{{ formatDate(activity.startDate) }}</td>
-                  <td class="cell-name">{{ activity.name }}</td>
-                  <td><span class="category-tag"><span class="cat-dot" [style.background]="CATEGORY_COLORS[activity.activityCategory]"></span>{{ formatSportType(activity.sportType) }}</span></td>
-                  <td class="cell-num">{{ formatDistance(activity.distanceMeters) }}</td>
+                  <td class="cell-date cell-date-secondary">{{ formatDate(activity.startDate) }}</td>
+                  <td class="cell-name cell-name-bold">{{ activity.name }}</td>
+                  <td><span class="category-tag" [style.background]="categoryTagBg(activity.activityCategory)" [style.color]="categoryTagFg(activity.activityCategory)"><span class="cat-emoji">{{ sportTypeEmoji(activity.activityCategory) }}</span>{{ formatSportType(activity.sportType) }}</span></td>
+                  <td class="cell-num cell-distance-bold">{{ formatDistance(activity.distanceMeters) }}</td>
                   <td class="cell-num">{{ formatSpeed(computeSpeed(activity.averageSpeedMetersPerSecond, activity.distanceMeters, activity.movingTimeSeconds)) }}</td>
                   <td class="cell-num">{{ formatDuration(activity.movingTimeSeconds) }}</td>
                   <td>
@@ -325,7 +370,17 @@ function routeStatusLabel(status: string): string {
             <button class="page-btn" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
               Previous
             </button>
-            <span class="page-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+            @for (p of pageNumbers(); track p) {
+              @if (typeof p === 'string') {
+                <span class="page-ellipsis">…</span>
+              } @else {
+                <button
+                  class="page-btn page-num"
+                  [class.page-active]="p === currentPage()"
+                  (click)="goToPage(p)"
+                >{{ p }}</button>
+              }
+            }
             <button class="page-btn" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
               Next
             </button>
@@ -348,12 +403,35 @@ function routeStatusLabel(status: string): string {
     </section>
   `,
   styles: [`
-    .summary-bar {
-      color: #314b3f;
-      font-size: 0.8125rem;
-      font-weight: 600;
+.stat-cards {
+      display: flex;
+      gap: 12px;
       margin-top: 14px;
-      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: #eef5f0;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 14px;
+      min-width: 90px;
+    }
+
+    .stat-card-value {
+      color: #14211b;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .stat-card-label {
+      color: #63746a;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .selection-bar {
@@ -380,14 +458,17 @@ function routeStatusLabel(status: string): string {
     }
 
     .selection-btn {
+      align-items: center;
       background: #ffffff;
       border: 1px solid #dce6df;
       border-radius: 6px;
       color: #14211b;
       cursor: pointer;
+      display: inline-flex;
       font: inherit;
       font-size: 0.8125rem;
       font-weight: 600;
+      gap: 6px;
       min-height: 32px;
       padding: 5px 12px;
     }
@@ -525,6 +606,11 @@ function routeStatusLabel(status: string): string {
       white-space: nowrap;
     }
 
+    .cell-date-secondary {
+      color: #a0b4a6;
+      font-size: 0.8125rem;
+    }
+
     .cell-name {
       color: #14211b;
       font-weight: 600;
@@ -534,22 +620,33 @@ function routeStatusLabel(status: string): string {
       white-space: nowrap;
     }
 
+    .cell-name-bold {
+      font-weight: 700;
+    }
+
+    .cell-distance-bold {
+      font-weight: 700;
+      color: #14211b;
+    }
+
     .cell-num {
       white-space: nowrap;
     }
 
     .category-tag {
       align-items: center;
-      background: #eef5f0;
-      border-radius: 4px;
-      color: #314b3f;
+      border-radius: 5px;
       display: inline-flex;
-      font-size: 0.75rem;
+      font-size: 0.875rem;
       font-weight: 700;
-      gap: 4px;
-      padding: 3px 7px;
-      text-transform: capitalize;
+      gap: 5px;
+      padding: 4px 9px;
       white-space: nowrap;
+    }
+
+    .cat-emoji {
+      font-size: 0.875rem;
+      line-height: 1;
     }
 
     .cat-dot {
@@ -613,6 +710,28 @@ function routeStatusLabel(status: string): string {
     .page-btn:disabled {
       color: #a0b4a6;
       cursor: default;
+    }
+
+    .page-num {
+      min-width: 36px;
+      padding: 6px 8px;
+    }
+
+    .page-active {
+      background: #1f6f50;
+      border-color: #1f6f50;
+      color: #ffffff;
+    }
+
+    .page-active:hover:not(:disabled) {
+      background: #185940;
+      border-color: #185940;
+    }
+
+    .page-ellipsis {
+      color: #a0b4a6;
+      font-size: 0.875rem;
+      padding: 0 2px;
     }
 
     .page-info {
@@ -948,21 +1067,72 @@ export class ActivitiesPageComponent {
   protected readonly PAGE_SIZE_OPTIONS = PAGE_SIZE_OPTIONS;
   protected readonly pageSize = signal(50);
   protected readonly CATEGORY_COLORS = CATEGORY_COLORS;
+  protected readonly CATEGORY_EMOJI = CATEGORY_EMOJI;
   protected readonly sortColumn = signal<SortColumn>('date');
   protected readonly sortDirection = signal<-1 | 1>(-1);
   protected readonly filterMenuOpen = signal(false);
+  protected readonly datePresetOpen = signal(false);
+  protected readonly datePreset = signal<'all' | '7d' | '30d' | 'year' | 'custom'>('all');
   protected readonly pageSizeMenuOpen = signal(false);
   protected readonly openMenuId = signal<string | null>(null);
   protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly menuStyle = signal<Record<string, string>>({});
 
   private readonly filtersService = inject(FiltersService);
+
+  protected applyDatePreset(preset: 'all' | '7d' | '30d' | 'year' | 'custom'): void {
+    this.datePreset.set(preset);
+    this.datePresetOpen.set(false);
+    if (preset === 'all') {
+      this.filtersService.setDateFrom('');
+      this.filtersService.setDateTo('');
+      this.clearSelection();
+      return;
+    }
+    if (preset === 'custom') {
+      this.clearSelection();
+      return;
+    }
+    const now = new Date();
+    let from: Date;
+    if (preset === '7d') {
+      from = new Date(now);
+      from.setDate(from.getDate() - 7);
+    } else if (preset === '30d') {
+      from = new Date(now);
+      from.setDate(from.getDate() - 30);
+    } else {
+      from = new Date(now.getFullYear(), 0, 1);
+    }
+    const fromStr = from.toISOString().slice(0, 10);
+    const toStr = now.toISOString().slice(0, 10);
+    this.filtersService.setDateFrom(fromStr);
+    this.filtersService.setDateTo(toStr);
+    this.clearSelection();
+  }
   protected readonly sportTypeFilter = signal<string | null>(null);
   protected readonly dateFrom = this.filtersService.dateFrom;
   protected readonly dateTo = this.filtersService.dateTo;
   protected readonly nameSearch = this.filtersService.nameSearch;
 
   protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.totalFilteredCount() / this.pageSize())));
+
+  protected readonly pageNumbers = computed<(number | '…')[]>(() => {
+    const total = this.totalPages();
+    const cur = this.currentPage();
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | '…')[] = [];
+    pages.push(1);
+    if (cur > 3) { pages.push('…'); }
+    const start = Math.max(2, cur - 1);
+    const end = Math.min(total - 1, cur + 1);
+    for (let i = start; i <= end; i++) { pages.push(i); }
+    if (cur < total - 2) { pages.push('…'); }
+    pages.push(total);
+    return pages;
+  });
 
   protected readonly sportTypeGroups = computed<{ category: ActivityCategory; sportTypes: string[] }[]>(() => {
     const items = this.activities();
@@ -1028,6 +1198,45 @@ export class ActivitiesPageComponent {
     if (!page || page.length === 0) { return false; }
     const ids = this.selectedIds();
     return page.every((a) => ids.has(a.id));
+  });
+
+  protected readonly datePresetLabel = computed(() => {
+    const p = this.datePreset();
+    switch (p) {
+      case 'all': return 'All dates';
+      case '7d': return 'Last 7 days';
+      case '30d': return 'Last 30 days';
+      case 'year': return 'This year';
+      case 'custom': return 'Custom range';
+    }
+  });
+
+  protected readonly statCards = computed(() => {
+    const all = this.allFiltered();
+    if (all.length === 0) { return [{ label: 'Activities', value: '0' }]; }
+    const count = all.length;
+    const totalDistanceMeters = all.reduce((s, a) => s + (a.distanceMeters ?? 0), 0);
+    const distanceKm = totalDistanceMeters / 1000;
+    const totalMovingSeconds = all.reduce((s, a) => s + (a.movingTimeSeconds ?? 0), 0);
+    const activitiesWithSpeed = all.filter((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds) !== undefined);
+    const avgSpeedKmh = (() => {
+      if (activitiesWithSpeed.length === 0) { return null; }
+      const speedsMs = activitiesWithSpeed.map((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds)!);
+      const avgMs = speedsMs.reduce((s, v) => s + v, 0) / speedsMs.length;
+      return avgMs * 3.6;
+    })();
+    const cards: { label: string; value: string }[] = [];
+    cards.push({ label: count === 1 ? 'Activity' : 'Activities', value: `${count}` });
+    if (totalDistanceMeters > 0) {
+      cards.push({ label: 'Distance', value: distanceKm >= 100 ? `${distanceKm.toFixed(0)} km` : `${distanceKm.toFixed(2)} km` });
+    }
+    if (totalMovingSeconds > 0) {
+      cards.push({ label: 'Moving time', value: formatDurationHours(totalMovingSeconds) });
+    }
+    if (avgSpeedKmh !== null) {
+      cards.push({ label: 'Avg speed', value: `${avgSpeedKmh.toFixed(1)} km/h` });
+    }
+    return cards;
   });
 
   protected readonly summaryText = computed(() => {
@@ -1121,6 +1330,10 @@ export class ActivitiesPageComponent {
     const ids = this.selectedIds();
     const all = this.allFiltered();
     const selected = all.filter((a) => ids.has(a.id));
+    if (selected.length > 10) {
+      const ok = window.confirm(`Exporting ${selected.length} files — your browser may prompt to allow multiple downloads.`);
+      if (!ok) { return; }
+    }
     const result = await this.gpxExportService.exportActivitiesAsZip(selected);
     this.clearSelection();
     if (result.exported > 0 && result.skipped > 0) {
@@ -1192,6 +1405,17 @@ export class ActivitiesPageComponent {
     this.currentPage.set(page);
     this.loadPage(page);
     this.clearSelection();
+  }
+
+  protected viewSelectedOnMap(): void {
+    const ids = this.selectedIds();
+    const all = this.allFiltered();
+    const firstWithRoute = all.find((a) => ids.has(a.id) && a.hasRoute);
+    if (firstWithRoute) {
+      this.router.navigate(['/map'], { queryParams: { activityId: firstWithRoute.id } });
+    } else {
+      this.toastService.show('None of the selected activities have a route to view on the map.');
+    }
   }
 
   protected navigateToActivity(activity: ActivityRecord): void {
@@ -1304,6 +1528,17 @@ export class ActivitiesPageComponent {
   protected routeStatusLabel = routeStatusLabel;
   protected formatDateInput = formatDateInput;
   protected formatSportType = formatSportType;
+  protected sportTypeEmoji = (cat: string): string => CATEGORY_EMOJI[cat] ?? '🏋️';
+
+  protected categoryTagBg = (cat: string): string => {
+    const c = CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS];
+    return c ? c + '22' : '#eef5f0';
+  };
+
+  protected categoryTagFg = (cat: string): string => {
+    const c = CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS];
+    return c ?? '#314b3f';
+  };
   protected onDateFromChange = (v: string) => { this.filtersService.setDateFrom(v); this.clearSelection(); };
   protected onDateToChange = (v: string) => { this.filtersService.setDateTo(v); this.clearSelection(); };
   protected onNameSearchChange = (v: string) => { this.filtersService.setNameSearch(v); this.clearSelection(); };
