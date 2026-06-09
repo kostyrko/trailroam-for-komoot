@@ -1,35 +1,50 @@
 <main class="app-shell">
   <header class="app-header">
-    <div class="brand-group">
-      <a class="brand" routerLink="/map">
-        <img class="brand-logo" src="assets/trailroam-logo.svg" alt="" width="24" height="24" />
-        TrailRoam for Strava
+    <div class="app-header__brand">
+      <a class="app-header__brand-link" routerLink="/map">
+        <img class="app-header__logo" src="assets/trailroam-logo.svg" alt="" width="32" height="32" />
+        <div class="app-header__brand-copy">
+          <div class="app-header__title">TrailRoam for Strava</div>
+          <div class="app-header__subtitle">Chrome extension</div>
+        </div>
       </a>
-      <span class="app-context">Chrome extension</span>
     </div>
 
-    <div class="app-nav-wrap">
-      <nav class="app-nav" aria-label="Primary navigation">
-        <a routerLink="/activities" routerLinkActive="active">Activities</a>
-        <a routerLink="/map" routerLinkActive="active">Map</a>
-        <a routerLink="/settings" routerLinkActive="active">Settings</a>
-      </nav>
-      <button class="nav-reload-btn" type="button" (click)="refreshExtension()" title="Reload extension" aria-label="Reload extension">
-        ↻ Reload
+    <nav class="main-nav-switcher" aria-label="Primary navigation">
+      <a class="main-nav-item" routerLink="/activities" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Activities</a>
+      <a class="main-nav-item" routerLink="/map" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Map Explorer</a>
+      <a class="main-nav-item" routerLink="/settings" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Settings</a>
+    </nav>
+
+    <div class="app-header__actions">
+      <div class="sync-status">
+        @if (syncedJustNow()) {
+          <span class="sync-status__success">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Synced just now
+          </span>
+        }
+        @if (lastSyncLabel(); as label) {
+          <span class="sync-status__last">Last synced: {{ label }}</span>
+        }
+      </div>
+
+      <button class="refresh-btn" type="button" (click)="refreshExtension()" title="Refresh page" aria-label="Refresh page">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <span class="refresh-btn__label-full">Refresh view</span>
+        <span class="refresh-btn__label-short">Refresh</span>
       </button>
-    </div>
 
-    <div class="header-actions" aria-label="Sync controls">
       <div class="sync-menu-wrapper">
         <button
-          class="sync-menu-trigger"
+          class="sync-btn"
           type="button"
           aria-haspopup="menu"
           [attr.aria-expanded]="syncMenuOpen()"
           (click)="toggleSyncMenu()"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          Sync
+          Sync Strava
         </button>
 
         @if (syncMenuOpen()) {

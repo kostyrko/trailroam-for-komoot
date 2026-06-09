@@ -38,12 +38,47 @@ export class App {
 
   protected readonly syncSummary = signal<SyncSummary | null>(null);
   protected readonly syncMenuOpen = signal(false);
+  protected readonly lastSyncLabel = signal<string | null>(null);
+  protected readonly syncedJustNow = signal(false);
   protected readonly buildDate: string =
     document.documentElement.getAttribute('data-build') ?? 'dev';
 
   constructor() {
     this.loadSyncSummary();
+    this.loadLastSyncLabel();
     this.listenForMessages();
+  }
+
+  private syncJustNowTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private flashSyncedJustNow(): void {
+    this.syncedJustNow.set(true);
+    if (this.syncJustNowTimer) clearTimeout(this.syncJustNowTimer);
+    this.syncJustNowTimer = setTimeout(() => {
+      this.syncedJustNow.set(false);
+      this.syncJustNowTimer = null;
+    }, 10000);
+  }
+
+  private async loadLastSyncLabel(): Promise<void> {
+    try {
+      const syncState = await this.repositories.syncState.get();
+      if (syncState?.lastSuccessfulSyncAt) {
+        const date = new Date(syncState.lastSuccessfulSyncAt);
+        const formatted = date.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        this.lastSyncLabel.set(formatted);
+      } else {
+        this.lastSyncLabel.set(null);
+      }
+    } catch {
+      this.lastSyncLabel.set(null);
+    }
   }
 
   private listenForMessages(): void {
@@ -55,6 +90,8 @@ export class App {
       if (msg?.type === 'TRAILROAM_SYNC_DONE') {
         console.log('[Trailroam] Sync done notification received');
         this.loadSyncSummary();
+        this.loadLastSyncLabel();
+        this.flashSyncedJustNow();
         return undefined;
       }
       if (msg?.type === 'TRAILROAM_GET_MISSING_ACTIVITIES') {
@@ -70,6 +107,8 @@ export class App {
         this.storeImportedData(msg.payload).then(() => {
           console.log('[Trailroam] Store activities completed');
           this.loadSyncSummary();
+          this.loadLastSyncLabel();
+          this.flashSyncedJustNow();
           return undefined;
         });
       }

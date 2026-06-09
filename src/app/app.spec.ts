@@ -61,7 +61,7 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = [...compiled.querySelectorAll('nav a')].map((link) => link.textContent?.trim());
-    expect(links).toEqual(['Activities', 'Map', 'Settings']);
+    expect(links).toEqual(['Activities', 'Map Explorer', 'Settings']);
   });
 
   it('should render header sync button', async () => {
@@ -71,11 +71,11 @@ describe('App', () => {
     await flushMicrotasks();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    const syncButton = compiled.querySelector<HTMLButtonElement>('.sync-menu-trigger');
+    const syncButton = compiled.querySelector<HTMLButtonElement>('.sync-btn');
 
-    expect(compiled.querySelector('.brand')?.textContent).toContain('TrailRoam for Strava');
-    expect(compiled.querySelector('.header-actions')).toBeTruthy();
-    expect(syncButton?.textContent).toContain('Sync');
+    expect(compiled.querySelector('.app-header__brand')?.textContent).toContain('TrailRoam for Strava');
+    expect(compiled.querySelector('.app-header__actions')).toBeTruthy();
+    expect(syncButton?.textContent).toContain('Sync Strava');
     expect(syncButton?.getAttribute('aria-haspopup')).toBe('menu');
   });
 

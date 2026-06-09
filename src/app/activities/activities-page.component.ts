@@ -120,7 +120,17 @@ function routeStatusLabel(status: string): string {
   selector: 'app-activities-page',
   template: `
     <section class="route-page" aria-labelledby="activities-title">
-      <h1 id="activities-title">Activities</h1>
+
+      <div class="activities-header">
+        <div class="activities-header__title-row">
+          <h1 id="activities-title">Activities</h1>
+          <div class="local-storage-indicator" title="Activity data is stored locally in this browser">
+            <svg class="ls-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Stored locally in this browser</span>
+            <svg class="ls-info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+        </div>
+      </div>
 
       @if (status() === 'loading') {
         <article class="empty-state" aria-label="Loading activities">
@@ -138,114 +148,167 @@ function routeStatusLabel(status: string): string {
           <button class="primary-action" type="button" (click)="startSync()">Sync activities</button>
         </article>
       } @else if (activities(); as items) {
-        <div class="activities-filters">
-          <div class="filter-row filter-row-search">
-            <div class="filter-group search-group">
-              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input
-                class="filter-input search-input"
-                type="text"
-                placeholder="Search activities…"
-                [value]="nameSearch()"
-                (input)="onNameSearchChange($any($event.target).value)"
-              />
-              @if (nameSearch()) {
-                <button class="filter-clear search-clear" type="button" (click)="onNameSearchChange('')">×</button>
-              }
-            </div>
+        <div class="activities-toolbar">
+          <div class="search-field">
+            <svg class="search-field__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              class="search-field__input"
+              type="text"
+              aria-label="Search activities"
+              placeholder="Search activities..."
+              [value]="nameSearch()"
+              (input)="onNameSearchChange($any($event.target).value)"
+            />
+            @if (nameSearch()) {
+              <button class="search-field__clear" type="button" (click)="onNameSearchChange('')" aria-label="Clear search">&times;</button>
+            }
           </div>
-          <div class="filter-row">
-            <div class="filter-group">
-              <span class="filter-label">Activity type</span>
-              <div class="custom-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()">
-                <span class="custom-select-trigger">
-                  @if (sportTypeFilter(); as sel) {
-                    @if (sel.startsWith('__cat__')) {
-                      {{ sel.slice(7) }}
-                    } @else {
-                      {{ formatSportType(sel) }}
-                    }
-                  } @else {
-                    All types
+
+          <div class="toolbar-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()" aria-label="Filter by activity type">
+            <span class="toolbar-select__trigger">
+              @if (sportTypeFilter(); as sel) {
+                @if (sel.startsWith('__cat__')) {
+                  {{ sel.slice(7) }}
+                } @else {
+                  {{ formatSportType(sel) }}
+                }
+              } @else {
+                All Activities
+              }
+              <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            @if (filterMenuOpen()) {
+              <ul class="toolbar-select__options sport-type-filter" (mousedown)="$event.preventDefault()">
+                <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All Activities</li>
+                @for (group of sportTypeGroups(); track group.category) {
+                  <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
+                  </li>
+                  @for (st of group.sportTypes; track st) {
+                    <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
+                      <span class="sport-type-label">{{ formatSportType(st) }}</span>
+                    </li>
                   }
-                  <span class="select-arrow">▾</span>
-                </span>
-                @if (filterMenuOpen()) {
-                  <ul class="custom-select-options sport-type-filter" (mousedown)="$event.preventDefault()">
-                    <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All types</li>
-                    @for (group of sportTypeGroups(); track group.category) {
-                      <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
-                        <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
-                      </li>
-                      @for (st of group.sportTypes; track st) {
-                        <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
-                          <span class="sport-type-label">{{ formatSportType(st) }}</span>
-                        </li>
-                      }
-                    }
-                  </ul>
                 }
-              </div>
-              @if (sportTypeFilter()) {
-                <button class="filter-clear" type="button" (click)="onSportTypeChange('')">Clear</button>
-              }
-            </div>
-            <div class="filter-group">
-              <span class="filter-label">Dates</span>
-              <div class="custom-select" tabindex="0" (click)="datePresetOpen.set(!datePresetOpen())" (keydown.enter)="datePresetOpen.set(!datePresetOpen())" (blur)="datePresetOpen.set(false)">
-                <span class="custom-select-trigger">
-                  {{ datePresetLabel() }}<span class="select-arrow">▾</span>
-                </span>
-                @if (datePresetOpen()) {
-                  <ul class="custom-select-options" (mousedown)="$event.preventDefault()">
-                    <li role="option" (click)="applyDatePreset('all')" [class.active]="datePreset() === 'all'">All dates</li>
-                    <li role="option" (click)="applyDatePreset('7d')" [class.active]="datePreset() === '7d'">Last 7 days</li>
-                    <li role="option" (click)="applyDatePreset('30d')" [class.active]="datePreset() === '30d'">Last 30 days</li>
-                    <li role="option" (click)="applyDatePreset('year')" [class.active]="datePreset() === 'year'">This year</li>
-                    <li role="option" (click)="applyDatePreset('custom')" [class.active]="datePreset() === 'custom'">Custom range</li>
-                  </ul>
-                }
-              </div>
-            </div>
+              </ul>
+            }
           </div>
+
+          <div class="toolbar-select" tabindex="0" (click)="datePresetOpen.set(!datePresetOpen())" (keydown.enter)="datePresetOpen.set(!datePresetOpen())" (blur)="datePresetOpen.set(false)" aria-label="Filter by date range">
+            <span class="toolbar-select__trigger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {{ datePresetLabel() }}
+              <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            @if (datePresetOpen()) {
+              <ul class="toolbar-select__options" (mousedown)="$event.preventDefault()">
+                <li role="option" (click)="applyDatePreset('all')" [class.active]="datePreset() === 'all'">All dates</li>
+                <li role="option" (click)="applyDatePreset('7d')" [class.active]="datePreset() === '7d'">Last 7 days</li>
+                <li role="option" (click)="applyDatePreset('30d')" [class.active]="datePreset() === '30d'">Last 30 days</li>
+                <li role="option" (click)="applyDatePreset('year')" [class.active]="datePreset() === 'year'">This year</li>
+                <li role="option" (click)="applyDatePreset('custom')" [class.active]="datePreset() === 'custom'">Custom range</li>
+              </ul>
+            }
+          </div>
+
           @if (datePreset() === 'custom') {
-            <div class="filter-row">
-              <label class="filter-group">
-                <span class="filter-label">From</span>
+            <div class="custom-date-fields">
+              <label class="custom-date-field">
+                <span class="custom-date-label">From</span>
                 <input
-                  class="filter-input"
+                  class="custom-date-input"
                   type="date"
                   [value]="formatDateInput(dateFrom())"
                   (change)="onDateFromChange($any($event.target).value)"
                 />
-                @if (dateFrom()) {
-                  <button class="filter-clear" type="button" (click)="onDateFromChange('')">Clear</button>
-                }
               </label>
-              <label class="filter-group">
-                <span class="filter-label">To</span>
+              <label class="custom-date-field">
+                <span class="custom-date-label">To</span>
                 <input
-                  class="filter-input"
+                  class="custom-date-input"
                   type="date"
                   [value]="formatDateInput(dateTo())"
                   (change)="onDateToChange($any($event.target).value)"
                 />
-                @if (dateTo()) {
-                  <button class="filter-clear" type="button" (click)="onDateToChange('')">Clear</button>
-                }
               </label>
             </div>
           }
         </div>
 
-        <div class="stat-cards">
-          @for (card of statCards(); track card.label) {
-            <div class="stat-card">
-              <span class="stat-card-value">{{ card.value }}</span>
-              <span class="stat-card-label">{{ card.label }}</span>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--activities">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
-          }
+            <div class="stat-card__body">
+              <span class="stat-card__value">{{ statCount() }}</span>
+              <span class="stat-card__label">Activities</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--route">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-card__body">
+              <span class="stat-card__value">{{ statDistance() }}</span>
+              <span class="stat-card__label">Total Distance</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--time">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-card__body">
+              <span class="stat-card__value">{{ statMovingTime() }}</span>
+              <span class="stat-card__label">Total Time</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--speed">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="stat-card__body">
+              <span class="stat-card__value">{{ statAvgSpeed() }}</span>
+              <span class="stat-card__label">Avg Speed</span>
+            </div>
+          </div>
         </div>
+
+        @if (showLocalNotice()) {
+          <div class="local-data-notice" role="status">
+            <svg class="local-data-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div class="local-data-notice__content">
+              <strong>All your activity data is stored locally in your browser.</strong>
+              <span>No data is sent to any server. Use Sync with Strava to import new activities.</span>
+            </div>
+            <button class="local-data-notice__dismiss" type="button" (click)="dismissLocalNotice()" aria-label="Dismiss local storage notice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        }
+
+        @if (selectionCount() > 0) {
+          <div class="selected-actions-bar">
+            <div class="selected-actions-bar__summary">
+              <svg class="selected-actions-bar__check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>{{ selectionCount() === 1 ? '1 activity selected' : selectionCount() + ' activities selected' }}</span>
+            </div>
+            <div class="selected-actions-bar__actions">
+              <button class="selected-action selected-action--secondary" type="button" (click)="downloadSelectedGpx()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download GPX
+              </button>
+              <button class="selected-action selected-action--danger" type="button" (click)="deleteSelected()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Delete
+              </button>
+              <button class="selected-action selected-action--secondary" type="button" (click)="clearSelection()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        }
 
         <p class="activities-count">
           @if (totalFilteredCount() > pageSize()) {
@@ -254,27 +317,6 @@ function routeStatusLabel(status: string): string {
             {{ totalFilteredCount() }} activities
           }
         </p>
-
-        @if (selectionCount() > 0) {
-          <div class="selection-bar">
-            <span class="selection-count">{{ selectionCount() }} selected</span>
-            <span class="selection-actions">
-              <button class="selection-btn" type="button" (click)="downloadSelectedGpx()">
-                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download GPX
-              </button>
-              <button class="selection-btn" type="button" (click)="viewSelectedOnMap()">
-                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                View on Map
-              </button>
-              <button class="selection-btn selection-btn-danger" type="button" (click)="deleteSelected()">
-                <svg class="selection-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Delete
-              </button>
-            </span>
-            <button class="selection-clear" type="button" (click)="clearSelection()">×</button>
-          </div>
-        }
 
         <div class="activities-table-wrap">
           <table class="activities-table" aria-label="Imported activities">
@@ -403,103 +445,385 @@ function routeStatusLabel(status: string): string {
     </section>
   `,
   styles: [`
-.stat-cards {
-      display: flex;
-      gap: 12px;
-      margin-top: 14px;
-      flex-wrap: wrap;
+    .activities-header {
+      margin-bottom: 16px;
     }
 
-    .stat-card {
-      background: #eef5f0;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
-      padding: 8px 14px;
-      min-width: 90px;
-    }
-
-    .stat-card-value {
-      color: #14211b;
-      font-size: 1rem;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-
-    .stat-card-label {
-      color: #63746a;
-      font-size: 0.6875rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .selection-bar {
+    .activities-header__title-row {
       align-items: center;
-      background: #e6f7ef;
-      border: 1px solid #b8d9c6;
-      border-radius: 8px;
       display: flex;
       gap: 12px;
-      margin-top: 12px;
-      padding: 10px 14px;
     }
 
-    .selection-count {
-      color: #1f6f50;
-      font-size: 0.875rem;
+    .activities-header__title-row h1 {
+      font-size: 1.5rem;
       font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin: 0;
     }
 
-    .selection-actions {
+    .local-storage-indicator {
+      align-items: center;
+      color: #859b8e;
+      display: inline-flex;
+      font-size: 0.8125rem;
+      gap: 6px;
+    }
+
+    .ls-icon {
+      color: #63746a;
+      flex-shrink: 0;
+    }
+
+    .ls-info-icon {
+      color: #a0b4a6;
+      cursor: help;
+      flex-shrink: 0;
+    }
+
+    .activities-toolbar {
+      align-items: center;
       display: flex;
-      gap: 8px;
-      margin-left: auto;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    .selection-btn {
+    .search-field {
       align-items: center;
       background: #ffffff;
       border: 1px solid #dce6df;
-      border-radius: 6px;
+      border-radius: 8px;
+      display: flex;
+      flex: 1;
+      min-width: 200px;
+      max-width: 340px;
+      min-height: 44px;
+      padding: 0 12px;
+      position: relative;
+    }
+
+    .search-field__icon {
+      color: #a0b4a6;
+      flex-shrink: 0;
+    }
+
+    .search-field__input {
+      border: 0;
       color: #14211b;
+      font: inherit;
+      font-size: 0.875rem;
+      outline: none;
+      padding: 0 8px;
+      width: 100%;
+    }
+
+    .search-field__input::placeholder {
+      color: #a0b4a6;
+    }
+
+    .search-field__clear {
+      background: transparent;
+      border: 0;
+      color: #a0b4a6;
+      cursor: pointer;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1;
+      min-height: 24px;
+      min-width: 24px;
+      padding: 0;
+    }
+
+    .search-field__clear:hover {
+      color: #63746a;
+    }
+
+    .toolbar-select {
+      cursor: pointer;
+      outline: none;
+      position: relative;
+      user-select: none;
+    }
+
+    .toolbar-select__trigger {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      color: #14211b;
+      display: inline-flex;
+      font-size: 0.875rem;
+      gap: 8px;
+      min-height: 44px;
+      min-width: 180px;
+      padding: 0 14px;
+    }
+
+    .toolbar-select__arrow {
+      color: #a0b4a6;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .toolbar-select__options {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgb(20 33 27 / 15%);
+      left: 0;
+      list-style: none;
+      margin: 4px 0 0;
+      min-width: 100%;
+      padding: 4px;
+      position: absolute;
+      top: 100%;
+      z-index: 20;
+    }
+
+    .toolbar-select__options li {
+      align-items: center;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    .toolbar-select__options li:hover,
+    .toolbar-select__options li.active {
+      background: #eef5f0;
+    }
+
+    .sport-type-filter {
+      max-height: 320px;
+      min-width: 200px;
+      overflow-y: auto;
+    }
+
+    .sport-type-group-header {
+      color: #63746a;
+      cursor: default;
+      font-size: 0.6875rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 8px 12px 4px;
+      text-transform: uppercase;
+    }
+
+    .sport-type-group-header:hover {
+      background: transparent;
+    }
+
+    .sport-type-option {
+      padding-left: 0;
+    }
+
+    .sport-type-label {
+      margin-left: 24px;
+    }
+
+    .custom-date-fields {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .custom-date-field {
+      align-items: center;
+      display: flex;
+      gap: 6px;
+    }
+
+    .custom-date-label {
+      color: #63746a;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    .custom-date-input {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      color: #14211b;
+      font: inherit;
+      font-size: 0.875rem;
+      min-height: 44px;
+      padding: 0 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 12px;
+      display: flex;
+      gap: 14px;
+      min-height: 80px;
+      padding: 16px 20px;
+    }
+
+    .stat-card__icon {
+      align-items: center;
+      background: #e6f7ef;
+      border-radius: 50%;
+      color: #1f6f50;
+      display: flex;
+      height: 40px;
+      justify-content: center;
+      width: 40px;
+      flex-shrink: 0;
+    }
+
+    .stat-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .stat-card__value {
+      color: #14211b;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stat-card__label {
+      color: #63746a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .local-data-notice {
+      align-items: center;
+      background: #e6f7ef;
+      border: 1px solid #a3d4bb;
+      border-radius: 10px;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 14px 16px;
+    }
+
+    .local-data-notice__icon {
+      color: #1f6f50;
+      flex-shrink: 0;
+    }
+
+    .local-data-notice__content {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.8125rem;
+      gap: 2px;
+      line-height: 1.5;
+      min-width: 0;
+    }
+
+    .local-data-notice__content strong {
+      color: #14412e;
+    }
+
+    .local-data-notice__content span {
+      color: #36634b;
+    }
+
+    .local-data-notice__dismiss {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      color: #7cb89a;
+      cursor: pointer;
+      display: inline-flex;
+      flex-shrink: 0;
+      justify-content: center;
+      min-height: 28px;
+      min-width: 28px;
+      padding: 0;
+    }
+
+    .local-data-notice__dismiss:hover {
+      color: #1f6f50;
+    }
+
+    .selected-actions-bar {
+      align-items: center;
+      background: #1f6f50;
+      border-radius: 10px;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      margin-bottom: 0;
+      padding: 10px 16px;
+    }
+
+    .selected-actions-bar__summary {
+      align-items: center;
+      color: #ffffff;
+      display: inline-flex;
+      font-size: 0.875rem;
+      font-weight: 700;
+      gap: 8px;
+    }
+
+    .selected-actions-bar__check {
+      flex-shrink: 0;
+    }
+
+    .selected-actions-bar__actions {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+    }
+
+    .selected-action {
+      align-items: center;
+      background: rgb(255 255 255 / 12%);
+      border: 1px solid rgb(255 255 255 / 25%);
+      border-radius: 8px;
+      color: #ffffff;
       cursor: pointer;
       display: inline-flex;
       font: inherit;
       font-size: 0.8125rem;
       font-weight: 600;
       gap: 6px;
-      min-height: 32px;
-      padding: 5px 12px;
+      min-height: 36px;
+      padding: 0 14px;
+      white-space: nowrap;
     }
 
-    .selection-btn:hover {
-      background: #eef5f0;
+    .selected-action:hover {
+      background: rgb(255 255 255 / 20%);
     }
 
-    .selection-btn-danger {
-      color: #8f2d22;
+    .selected-action--secondary:hover {
+      background: rgb(255 255 255 / 20%);
     }
 
-    .selection-btn-danger:hover {
-      background: #fdf0ee;
+    .selected-action--danger {
+      border-color: rgb(255 255 255 / 35%);
     }
 
-    .selection-clear {
-      background: transparent;
-      border: 0;
-      color: #63746a;
-      cursor: pointer;
-      font-size: 1.25rem;
-      font-weight: 700;
-      line-height: 1;
-      min-height: 28px;
-      min-width: 28px;
-      padding: 0;
-    }
-
-    .selection-clear:hover {
-      color: #14211b;
+    .selected-action--danger:hover {
+      background: #8f2d22;
+      border-color: #8f2d22;
     }
 
     .col-checkbox {
@@ -531,14 +855,14 @@ function routeStatusLabel(status: string): string {
 
     .activities-count {
       color: #4f6f5d;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
+      margin: 0 0 12px;
     }
 
     .activities-table-wrap {
       border: 1px solid #dce6df;
       border-radius: 8px;
-      margin-top: 16px;
       overflow-x: auto;
     }
 
@@ -858,191 +1182,26 @@ function routeStatusLabel(status: string): string {
       color: #8f2d22;
     }
 
-
-    .activities-filters {
-      margin-top: 16px;
+    @media (max-width: 900px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
-    .filter-group {
-      align-items: center;
-      display: flex;
-      gap: 8px;
-      position: relative;
-    }
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
 
-    .filter-label {
-      color: #4f6f5d;
-      font-size: 0.8125rem;
-      font-weight: 700;
-    }
+      .selected-actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
 
-    .custom-select {
-      cursor: pointer;
-      font-size: 0.875rem;
-      min-height: 36px;
-      outline: none;
-      position: relative;
-      user-select: none;
-    }
-
-    .custom-select-trigger {
-      align-items: center;
-      background: #ffffff;
-      border: 1px solid #dce6df;
-      border-radius: 6px;
-      color: #14211b;
-      display: inline-flex;
-      gap: 6px;
-      min-height: 36px;
-      padding: 6px 10px;
-    }
-
-    .select-arrow {
-      color: #a0b4a6;
-      font-size: 0.75rem;
-      margin-left: 4px;
-    }
-
-    .custom-select-options {
-      background: #ffffff;
-      border: 1px solid #dce6df;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgb(20 33 27 / 15%);
-      left: 0;
-      list-style: none;
-      margin: 0;
-      min-width: 100%;
-      padding: 4px 0;
-      position: absolute;
-      top: 100%;
-      z-index: 20;
-    }
-
-    .custom-select-options li {
-      align-items: center;
-      cursor: pointer;
-      display: flex;
-      gap: 6px;
-      padding: 8px 12px;
-      white-space: nowrap;
-    }
-
-    .custom-select-options li:hover,
-    .custom-select-options li.active {
-      background: #eef5f0;
-    }
-
-    .filter-clear {
-      background: transparent;
-      border: 1px solid #dce6df;
-      border-radius: 6px;
-      color: #314b3f;
-      cursor: pointer;
-      font: inherit;
-      font-size: 0.8125rem;
-      font-weight: 600;
-      min-height: 32px;
-      padding: 5px 11px;
-    }
-
-    .filter-clear:hover {
-      background: #eef5f0;
-    }
-
-    .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .filter-row + .filter-row {
-      margin-top: 10px;
-    }
-
-    .filter-input {
-      background: #ffffff;
-      border: 1px solid #dce6df;
-      border-radius: 6px;
-      color: #14211b;
-      font: inherit;
-      font-size: 0.875rem;
-      min-height: 36px;
-      padding: 6px 10px;
-    }
-
-    .sport-type-filter {
-      max-height: 320px;
-      min-width: 180px;
-      overflow-y: auto;
-    }
-
-    .sport-type-group-header {
-      align-items: center;
-      color: #63746a;
-      cursor: default;
-      display: flex;
-      font-size: 0.6875rem;
-      font-weight: 800;
-      gap: 6px;
-      letter-spacing: 0.06em;
-      padding: 8px 12px 4px;
-      text-transform: uppercase;
-    }
-
-    .sport-type-group-header:hover {
-      background: transparent;
-    }
-
-    .sport-type-option {
-      padding-left: 0;
-    }
-
-    .sport-type-label {
-      margin-left: 24px;
-    }
-
-    .filter-row-search {
-      margin-bottom: 10px;
-    }
-
-    .search-group {
-      flex: 1;
-      max-width: 360px;
-      position: relative;
-    }
-
-    .search-input {
-      padding-left: 34px;
-      width: 100%;
-    }
-
-    .search-icon {
-      color: #a0b4a6;
-      left: 10px;
-      pointer-events: none;
-      position: absolute;
-    }
-
-    .search-clear {
-      background: transparent;
-      border: 0;
-      border-radius: 50%;
-      color: #a0b4a6;
-      cursor: pointer;
-      font-size: 1.125rem;
-      font-weight: 700;
-      line-height: 1;
-      min-height: 24px;
-      min-width: 24px;
-      padding: 0;
-      position: absolute;
-      right: 6px;
-    }
-
-    .search-clear:hover {
-      color: #63746a;
-    }
-  `],
+      .selected-actions-bar__actions {
+        flex-wrap: wrap;
+      }
+    }`],
 })
 export class ActivitiesPageComponent {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
@@ -1077,6 +1236,11 @@ export class ActivitiesPageComponent {
   protected readonly openMenuId = signal<string | null>(null);
   protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly menuStyle = signal<Record<string, string>>({});
+  protected readonly showLocalNotice = signal(true);
+
+  protected dismissLocalNotice(): void {
+    this.showLocalNotice.set(false);
+  }
 
   private readonly filtersService = inject(FiltersService);
 
@@ -1211,32 +1375,33 @@ export class ActivitiesPageComponent {
     }
   });
 
-  protected readonly statCards = computed(() => {
+  protected readonly statCount = computed(() => {
+    const c = this.allFiltered().length;
+    return `${c}`;
+  });
+
+  protected readonly statDistance = computed(() => {
     const all = this.allFiltered();
-    if (all.length === 0) { return [{ label: 'Activities', value: '0' }]; }
-    const count = all.length;
     const totalDistanceMeters = all.reduce((s, a) => s + (a.distanceMeters ?? 0), 0);
     const distanceKm = totalDistanceMeters / 1000;
+    if (totalDistanceMeters === 0) { return '0 km'; }
+    return distanceKm >= 100 ? `${distanceKm.toFixed(0)} km` : `${distanceKm.toFixed(1)} km`;
+  });
+
+  protected readonly statMovingTime = computed(() => {
+    const all = this.allFiltered();
     const totalMovingSeconds = all.reduce((s, a) => s + (a.movingTimeSeconds ?? 0), 0);
+    if (totalMovingSeconds === 0) { return '0h 0m'; }
+    return formatDurationHours(totalMovingSeconds);
+  });
+
+  protected readonly statAvgSpeed = computed(() => {
+    const all = this.allFiltered();
     const activitiesWithSpeed = all.filter((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds) !== undefined);
-    const avgSpeedKmh = (() => {
-      if (activitiesWithSpeed.length === 0) { return null; }
-      const speedsMs = activitiesWithSpeed.map((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds)!);
-      const avgMs = speedsMs.reduce((s, v) => s + v, 0) / speedsMs.length;
-      return avgMs * 3.6;
-    })();
-    const cards: { label: string; value: string }[] = [];
-    cards.push({ label: count === 1 ? 'Activity' : 'Activities', value: `${count}` });
-    if (totalDistanceMeters > 0) {
-      cards.push({ label: 'Distance', value: distanceKm >= 100 ? `${distanceKm.toFixed(0)} km` : `${distanceKm.toFixed(2)} km` });
-    }
-    if (totalMovingSeconds > 0) {
-      cards.push({ label: 'Moving time', value: formatDurationHours(totalMovingSeconds) });
-    }
-    if (avgSpeedKmh !== null) {
-      cards.push({ label: 'Avg speed', value: `${avgSpeedKmh.toFixed(1)} km/h` });
-    }
-    return cards;
+    if (activitiesWithSpeed.length === 0) { return '—'; }
+    const speedsMs = activitiesWithSpeed.map((a) => computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds)!);
+    const avgMs = speedsMs.reduce((s, v) => s + v, 0) / speedsMs.length;
+    return `${(avgMs * 3.6).toFixed(1)} km/h`;
   });
 
   protected readonly summaryText = computed(() => {
