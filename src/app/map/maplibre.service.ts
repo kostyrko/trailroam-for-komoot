@@ -5,6 +5,7 @@ import { type ResolvedBasemapProvider } from './basemap-provider';
 /** Hosts the extension is allowed to fetch tiles from. */
 const ALLOWED_TILE_HOSTS = [
   'tiles.openfreemap.org',
+  'tile.opentopomap.org',
 ];
 
 const DEFAULT_CENTER: [number, number] = [0, 20];

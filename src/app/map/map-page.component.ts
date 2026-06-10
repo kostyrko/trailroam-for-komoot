@@ -725,7 +725,8 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       position: relative;
     }
 
-    .map-page-layout ::ng-deep .map-fit-btn {
+    .map-page-layout ::ng-deep .map-fit-btn,
+    .map-page-layout ::ng-deep .map-layer-wrapper {
       z-index: 150 !important;
     }
 

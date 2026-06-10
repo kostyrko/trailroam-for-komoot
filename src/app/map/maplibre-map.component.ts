@@ -12,7 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
-import { BasemapProviderService } from './basemap-provider.service';
+import { AVAILABLE_PROVIDERS, BasemapProviderService } from './basemap-provider.service';
 import { type MapRouteFeature } from './mock-routes';
 import { MapLibreService } from './maplibre.service';
 import { RouteRendererService } from './route-renderer.service';
@@ -34,6 +34,12 @@ import { RouteRendererService } from './route-renderer.service';
           <span class="fit-icon fit-icon-expand">⤢</span>
         }
       </button>
+      <div class="map-layer-wrapper">
+        <button class="map-layer-btn" type="button" (click)="cycleLayer()" [attr.aria-label]="'Map layer: ' + currentLayerLabel()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </button>
+        <span class="map-layer-label">{{ currentLayerLabel() }}</span>
+      </div>
     </div>
   `,
 })
@@ -67,6 +73,48 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private pendingReadyTasks: (() => void)[] | null = [];
   protected readonly fullscreen = signal(false);
   private mapInstance: Map | null = null;
+  private providerIndex = 0;
+
+  protected readonly currentLayerLabel = signal(AVAILABLE_PROVIDERS[0].label);
+
+  protected cycleLayer(): void {
+    this.providerIndex = (this.providerIndex + 1) % AVAILABLE_PROVIDERS.length;
+    const config = AVAILABLE_PROVIDERS[this.providerIndex];
+    this.currentLayerLabel.set(config.label);
+    this.basemapProviderService.setProvider(config);
+    const map = this.mapInstance;
+    if (!map) { return; }
+    map.setStyle(config.styleUrl!);
+    map.once('style.load', () => {
+      this.routeRendererService.init(map);
+      if (this.pendingReadyTasks) {
+        this.pendingReadyTasks = [];
+      }
+      this.rerenderRoutes();
+    });
+  }
+
+  private rerenderRoutes(): void {
+    this.routeRendererService.renderRoutes(this.cachedRoutes, (route) => this.routeSelected.emit(route));
+  }
+
+  private cachedRoutes: MapRouteFeature[] = [];
+
+  renderRouteFeatures(routes: MapRouteFeature[], selectedId?: string): void {
+    this.cachedRoutes = routes;
+    if (this.mapInstance?.getSource('routes')) {
+      this.rerenderRoutes();
+    } else {
+      this.routeRendererService.renderRoutes(routes, (route) => this.routeSelected.emit(route));
+    }
+    if (selectedId && this.mapInstance) {
+      const selected = routes.find((r) => r.activityId === selectedId || r.activity.id === selectedId);
+      if (selected) {
+        this.routeRendererService.selectRoute(selectedId);
+        this.routeRendererService.fitToRoute(selected.coordinates);
+      }
+    }
+  }
 
   async ngAfterViewInit(): Promise<void> {
     let map: Map;
@@ -87,7 +135,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
 
     this.mapInstance = map;
 
-    map.on('load', () => this.addMapControls());
+    map.once('load', () => this.addMapControls());
 
     map.on('error', (err) => {
       if (err?.error?.status === 404 || err?.error?.status === 403 || err?.error?.status === 500) {
@@ -124,26 +172,6 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     this.routeRendererService.fitToRoute(coordinates);
   }
 
-  renderRouteFeatures(routes: MapRouteFeature[], selectActivityId?: string): void {
-    if (this.pendingReadyTasks) {
-      this.pendingReadyTasks.push(() => this.renderRouteFeatures(routes, selectActivityId));
-      return;
-    }
-
-    this.routeRendererService.renderRoutes(routes, (route) => {
-      this.ngZone.run(() => {
-        this.routeSelected.emit(route);
-      });
-    });
-
-    if (selectActivityId) {
-      this.routeRendererService.selectRoute(selectActivityId);
-      const selected = routes.find((r) => r.activityId === selectActivityId);
-      if (selected) {
-        this.routeRendererService.fitToRoute(selected.coordinates);
-      }
-    }
-  }
 
   ngOnDestroy(): void {
     this.isDestroyed = true;
@@ -171,14 +199,17 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     }, 0);
   }
 
+  private controlsAdded = false;
+
   private addMapControls(): void {
     const map = this.mapInstance;
-    if (!map) { return; }
+    if (!map || this.controlsAdded) { return; }
     (async () => {
       try {
         const { default: maplibregl } = await import('maplibre-gl');
         map.addControl(new maplibregl.NavigationControl({}), 'top-left');
         map.addControl(new maplibregl.ScaleControl({ unit: 'metric', maxWidth: 200 }), 'bottom-left');
+        this.controlsAdded = true;
       } catch {
       }
     })();
