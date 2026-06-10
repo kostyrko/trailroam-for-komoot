@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { type Map } from 'maplibre-gl';
 import { AVAILABLE_PROVIDERS, BasemapProviderService } from './basemap-provider.service';
+import { type BasemapProviderConfig } from './basemap-provider';
 import { type MapRouteFeature } from './mock-routes';
 import { MapLibreService } from './maplibre.service';
 import { RouteRendererService } from './route-renderer.service';
@@ -35,10 +36,26 @@ import { RouteRendererService } from './route-renderer.service';
         }
       </button>
       <div class="map-layer-wrapper">
-        <button class="map-layer-btn" type="button" (click)="cycleLayer()" [attr.aria-label]="'Map layer: ' + currentLayerLabel()">
+        <button #layerBtn class="map-layer-btn" type="button" (click)="toggleLayerMenu()" aria-label="Switch map layer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         </button>
-        <span class="map-layer-label">{{ currentLayerLabel() }}</span>
+        @if (layerMenuOpen()) {
+          <div class="map-layer-menu" (click)="$event.stopPropagation()">
+            @for (provider of AVAILABLE_PROVIDERS; track provider.id) {
+              <button class="map-layer-menu-item" type="button" [class.active]="provider.id === activeProviderId()" (click)="selectLayer(provider)">
+                @if (provider.id === 'opentopomap') {
+                  <svg class="map-layer-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg>
+                } @else {
+                  <svg class="map-layer-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                }
+                <span class="map-layer-name">{{ provider.label }}</span>
+                @if (provider.id === activeProviderId()) {
+                  <span class="map-layer-check">✓</span>
+                }
+              </button>
+            }
+          </div>
+        }
       </div>
     </div>
   `,
@@ -65,6 +82,9 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: true })
   private readonly mapContainer!: ElementRef<HTMLElement>;
 
+  @ViewChild('layerBtn', { static: true })
+  private readonly layerBtn!: ElementRef<HTMLElement>;
+
   private readonly mapLibreService = inject(MapLibreService);
   private readonly basemapProviderService = inject(BasemapProviderService);
   private readonly routeRendererService = inject(RouteRendererService);
@@ -73,14 +93,29 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private pendingReadyTasks: (() => void)[] | null = [];
   protected readonly fullscreen = signal(false);
   private mapInstance: Map | null = null;
-  private providerIndex = 0;
 
-  protected readonly currentLayerLabel = signal(AVAILABLE_PROVIDERS[0].label);
+  protected readonly AVAILABLE_PROVIDERS = AVAILABLE_PROVIDERS;
+  protected readonly activeProviderId = signal(AVAILABLE_PROVIDERS[0].id);
+  protected readonly layerMenuOpen = signal(false);
 
-  protected cycleLayer(): void {
-    this.providerIndex = (this.providerIndex + 1) % AVAILABLE_PROVIDERS.length;
-    const config = AVAILABLE_PROVIDERS[this.providerIndex];
-    this.currentLayerLabel.set(config.label);
+  protected toggleLayerMenu(): void {
+    this.layerMenuOpen.update((v) => !v);
+    if (this.layerMenuOpen()) {
+      setTimeout(() => document.addEventListener('click', this.closeLayerMenu));
+    } else {
+      document.removeEventListener('click', this.closeLayerMenu);
+    }
+  }
+
+  private readonly closeLayerMenu = (): void => {
+    this.layerMenuOpen.set(false);
+    document.removeEventListener('click', this.closeLayerMenu);
+  };
+
+  protected selectLayer(config: BasemapProviderConfig): void {
+    this.activeProviderId.set(config.id);
+    this.layerMenuOpen.set(false);
+    document.removeEventListener('click', this.closeLayerMenu);
     this.basemapProviderService.setProvider(config);
     const map = this.mapInstance;
     if (!map) { return; }
@@ -177,6 +212,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     this.isDestroyed = true;
     this.pendingReadyTasks = null;
     this.mapInstance = null;
+    document.removeEventListener('click', this.closeLayerMenu);
   }
 
   protected toggleFullscreen(): void {
@@ -190,6 +226,10 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
       this.fullscreen.set(false);
       this.fullscreenChanged.emit(false);
       event.preventDefault();
+    }
+    if (event.key === 'Escape') {
+      this.layerMenuOpen.set(false);
+      document.removeEventListener('click', this.closeLayerMenu);
     }
   }
 
