@@ -79,7 +79,7 @@ export class ToastComponent {
       if (this.timeoutId) clearTimeout(this.timeoutId);
       this.message.set(t ? t.message : null);
       if (t) {
-        this.timeoutId = setTimeout(() => this.dismiss(), 3000);
+        this.timeoutId = setTimeout(() => this.dismiss(), t.durationMs ?? 3000);
       }
     });
   }

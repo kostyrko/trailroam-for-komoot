@@ -197,7 +197,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
           (fullscreenChanged)="mapFullscreen.set($event)"
         />
         @if (selectedRoute(); as route) {
-          <article class="route-detail" [class.route-detail-overlay]="mapFullscreen()" [class.show-profile-hint]="showProfileHint()" aria-label="Selected route details">
+          <article class="route-detail route-detail-overlay" aria-label="Selected route details">
             <div class="route-detail-header">
               <h2 class="route-detail-title">
                 <button class="route-title-link" type="button" (click)="navigateToActivity(route.activity)">
@@ -215,14 +215,6 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                         Download GPX
                       </button>
                     </li>
-                    @if (!mapFullscreen()) {
-                      <li role="none">
-                        <button class="detail-dropdown-item" role="menuitem" (click)="showProfile($event, route)">
-                          <svg class="detail-dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                          Show profile
-                        </button>
-                      </li>
-                    }
                   </ul>
                 }
               </div>
@@ -261,8 +253,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                 </dd>
               </div>
             </dl>
-            @if (mapFullscreen()) {
-              <div class="elevation-profile-wrap" [class.show-profile-hint-elevation]="showProfileHint()">
+            <div class="elevation-profile-wrap">
                 <app-elevation-profile
                   [elevations]="route.route.elevations"
                   [cumulativeDistances]="route.route.cumulativeDistances"
@@ -271,7 +262,6 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                   (hoveredPosition)="onElevationHover($event)"
                 />
               </div>
-            }
           </article>
         }
       }
@@ -292,24 +282,17 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
     </section>
   `,
   styles: [`
-    .route-detail {
-      background: #ffffff;
-      border: 1px solid #dce6df;
-      border-radius: 8px;
-      box-sizing: border-box;
-      margin-bottom: 12px;
-      margin-top: 12px;
-      padding: 12px 16px;
-      width: 100%;
-    }
-
     .route-detail-overlay {
+      background: #ffffff;
       border: 1px solid #cbd8d0;
+      border-radius: 8px;
       bottom: 52px;
       box-shadow: 0 4px 20px rgb(20 33 27 / 25%);
+      box-sizing: border-box;
       left: 24px;
       margin: 0;
       max-width: 380px;
+      padding: 12px 16px;
       position: fixed;
       z-index: 1001;
     }
@@ -442,19 +425,6 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
 
     .elevation-profile-wrap {
       margin-top: 10px;
-    }
-
-    .show-profile-hint-elevation {
-      animation: hint-pulse 5s ease-out;
-      border: 2px solid #cf3a2a;
-      border-radius: 6px;
-      display: inline-block;
-      padding: 3px;
-    }
-
-    @keyframes hint-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgb(207 58 42 / 60%); }
-      20% { box-shadow: 0 0 0 6px rgb(207 58 42 / 0%); }
     }
 
     .detail-close {
@@ -858,7 +828,6 @@ export class MapPage implements AfterViewInit {
 
   protected readonly sportTypeFilter = signal<string | null>(null);
   protected readonly detailMenuOpen = signal(false);
-  protected readonly showProfileHint = signal(false);
   protected readonly datePreset = signal<'all' | '7d' | '30d' | 'year' | 'custom'>('all');
   protected readonly datePresetOpen = signal(false);
 
@@ -1169,20 +1138,6 @@ export class MapPage implements AfterViewInit {
     }
   }
 
-  protected async showProfile(event: MouseEvent, route: MapRouteFeature): Promise<void> {
-    event.stopPropagation();
-    this.detailMenuOpen.set(false);
-    if (!this.mapFullscreen()) {
-      this.mapFullscreen.set(true);
-    }
-    const settings = await this.repositories.settings.getOrCreateDefault();
-    const hintCount = (settings as any).showProfileHintCount ?? 0;
-    if (hintCount < 5) {
-      this.showProfileHint.set(true);
-      await this.repositories.settings.put({ ...settings, showProfileHintCount: hintCount + 1 } as any);
-      setTimeout(() => this.showProfileHint.set(false), 5000);
-    }
-  }
 
   protected navigateToActivity(activity: import('../storage/storage.models').ActivityRecord): void {
     this.router.navigate(['/activities'], { queryParams: { focusActivityId: activity.id } });
