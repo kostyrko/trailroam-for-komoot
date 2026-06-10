@@ -238,6 +238,59 @@ describe('ActivitiesPageComponent', () => {
     expect(allSportTypes).toContain('StandUpPaddling');
   });
 
+  it('should show table and filters when no activities exist (new empty state)', async () => {
+    TestBed.configureTestingModule({
+      imports: [ActivitiesPageComponent],
+      providers: [
+        {
+          provide: TRAILROAM_REPOSITORIES,
+          useValue: createMockRepositories([], 0),
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ActivitiesPageComponent);
+    fixture.detectChanges();
+    await flushMicrotasks();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    // Table and filters should still be visible
+    expect(compiled.querySelector('.activities-toolbar')).toBeTruthy();
+    expect(compiled.querySelector('.stats-grid')).toBeTruthy();
+    expect(compiled.querySelector('.activities-table')).toBeTruthy();
+    expect(compiled.querySelector('.empty-state--no-activities')).toBeTruthy();
+    expect(compiled.querySelector('.empty-state--no-activities')?.textContent).toContain('Sync activities');
+  });
+
+  it('should show no-match empty state when filters yield no results', async () => {
+    TestBed.configureTestingModule({
+      imports: [ActivitiesPageComponent],
+      providers: [
+        {
+          provide: TRAILROAM_REPOSITORIES,
+          useValue: createMockRepositories([createActivity()], 1),
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(ActivitiesPageComponent);
+    fixture.detectChanges();
+    await flushMicrotasks();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const searchInput = compiled.querySelector('.search-field__input') as HTMLInputElement;
+    searchInput.value = '__NONEXISTENT__';
+    searchInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.empty-state--no-match')).toBeTruthy();
+    expect(compiled.querySelector('.empty-state--no-match')?.textContent).toContain('No matching activities');
+  });
+
   it('should not include hover preview popover', async () => {
     TestBed.configureTestingModule({
       imports: [ActivitiesPageComponent],

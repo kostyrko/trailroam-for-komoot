@@ -99,6 +99,7 @@ export interface SettingsRecord {
   mapProvider: 'openfreemap';
   preferredDefaultRoute?: 'map' | 'activities';
   dismissedSyncAt?: string;
+  dismissedLocalDataNoticeAt?: string;
   createdAt: string;
   updatedAt: string;
 }

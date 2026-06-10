@@ -119,7 +119,7 @@ function routeStatusLabel(status: string): string {
 @Component({
   selector: 'app-activities-page',
   template: `
-    <section class="route-page" aria-labelledby="activities-title">
+    <section class="route-page" aria-labelledby="activities-title" [class.route-page--empty]="status() === 'empty'">
 
       <div class="activities-header">
         <div class="activities-header__title-row">
@@ -137,17 +137,20 @@ function routeStatusLabel(status: string): string {
           <p class="empty-state-kicker">Loading</p>
           <p>Loading your local activities…</p>
         </article>
-      } @else if (status() === 'empty') {
-        <article class="empty-state" aria-labelledby="activities-empty-title">
-          <p class="empty-state-kicker">No activities yet</p>
-          <h2 id="activities-empty-title">Sync activities to start building your local history.</h2>
-          <p>
-            TrailRoam will show imported Strava activities here after the first successful sync.
-          </p>
-          <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
-          <button class="primary-action" type="button" (click)="startSync()">Sync activities</button>
-        </article>
-      } @else if (activities(); as items) {
+      } @else {
+        @if (showLocalNotice()) {
+          <div class="local-data-notice" role="status">
+            <svg class="local-data-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div class="local-data-notice__content">
+              <strong>All your activity data is stored locally in your browser.</strong>
+              <span>No data is sent to any server. Use Sync with Strava to import new activities.</span>
+            </div>
+            <button class="local-data-notice__dismiss" type="button" (click)="dismissLocalNotice()" aria-label="Dismiss local storage notice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        }
+
         <div class="activities-toolbar">
           <div class="search-field">
             <svg class="search-field__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -274,19 +277,6 @@ function routeStatusLabel(status: string): string {
           </div>
         </div>
 
-        @if (showLocalNotice()) {
-          <div class="local-data-notice" role="status">
-            <svg class="local-data-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div class="local-data-notice__content">
-              <strong>All your activity data is stored locally in your browser.</strong>
-              <span>No data is sent to any server. Use Sync with Strava to import new activities.</span>
-            </div>
-            <button class="local-data-notice__dismiss" type="button" (click)="dismissLocalNotice()" aria-label="Dismiss local storage notice">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        }
-
         @if (selectionCount() > 0) {
           <div class="selected-actions-bar">
             <div class="selected-actions-bar__summary">
@@ -310,6 +300,7 @@ function routeStatusLabel(status: string): string {
           </div>
         }
 
+        @if (status() !== 'empty') {
         <p class="activities-count">
           @if (totalFilteredCount() > pageSize()) {
             Showing page {{ currentPage() }} of {{ totalPages() }} · {{ totalFilteredCount() }} activities
@@ -317,7 +308,7 @@ function routeStatusLabel(status: string): string {
             {{ totalFilteredCount() }} activities
           }
         </p>
-
+        }
         <div class="activities-table-wrap">
           <table class="activities-table" aria-label="Imported activities">
             <thead>
@@ -407,7 +398,7 @@ function routeStatusLabel(status: string): string {
           </table>
         </div>
 
-        @if (totalPages() > 1) {
+        @if (totalPages() > 1 && status() !== 'empty') {
           <nav class="pagination" aria-label="Activities pagination">
             <button class="page-btn" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
               Previous
@@ -428,6 +419,7 @@ function routeStatusLabel(status: string): string {
             </button>
           </nav>
         }
+        @if (status() !== 'empty') {
         <div class="page-size-control">
           <span class="filter-label">Per page</span>
           <div class="custom-select page-size-select" tabindex="0" (click)="pageSizeMenuOpen.set(!pageSizeMenuOpen())" (keydown.enter)="pageSizeMenuOpen.set(!pageSizeMenuOpen())" (blur)="pageSizeMenuOpen.set(false)">
@@ -441,6 +433,30 @@ function routeStatusLabel(status: string): string {
             }
           </div>
         </div>
+        }
+
+        @if (status() === 'empty') {
+          <article class="empty-state empty-state--no-activities" aria-labelledby="activities-empty-title">
+            <p class="empty-state-kicker">No activities yet</p>
+            <h2 id="activities-empty-title">Sync activities to start building your local history.</h2>
+            <p>
+              TrailRoam will show imported Strava activities here after the first successful sync.
+            </p>
+            <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
+            <button class="primary-action" type="button" (click)="startSync()">Sync activities</button>
+          </article>
+        }
+
+        @if (filteredActivities(); as pageItems) {
+          @if (pageItems.length === 0 && status() !== 'empty') {
+            <article class="empty-state empty-state--no-match" aria-labelledby="activities-empty-match-title">
+              <p class="empty-state-kicker">No matching activities</p>
+              <h2 id="activities-empty-match-title">No activities match your filters.</h2>
+              <p>Try adjusting your search or filter criteria to find what you're looking for.</p>
+            </article>
+          }
+        }
+
       }
     </section>
   `,
@@ -712,7 +728,7 @@ function routeStatusLabel(status: string): string {
     }
 
     .local-data-notice {
-      align-items: center;
+      align-items: flex-start;
       background: #e6f7ef;
       border: 1px solid #a3d4bb;
       border-radius: 10px;
@@ -720,6 +736,7 @@ function routeStatusLabel(status: string): string {
       gap: 12px;
       margin-bottom: 16px;
       padding: 14px 16px;
+      position: relative;
     }
 
     .local-data-notice__icon {
@@ -734,6 +751,7 @@ function routeStatusLabel(status: string): string {
       gap: 2px;
       line-height: 1.5;
       min-width: 0;
+      padding-right: 28px;
     }
 
     .local-data-notice__content strong {
@@ -756,6 +774,9 @@ function routeStatusLabel(status: string): string {
       min-height: 28px;
       min-width: 28px;
       padding: 0;
+      position: absolute;
+      right: 8px;
+      top: 8px;
     }
 
     .local-data-notice__dismiss:hover {
@@ -1201,7 +1222,9 @@ function routeStatusLabel(status: string): string {
       .selected-actions-bar__actions {
         flex-wrap: wrap;
       }
-    }`],
+    }
+
+`],
 })
 export class ActivitiesPageComponent {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
@@ -1238,8 +1261,18 @@ export class ActivitiesPageComponent {
   protected readonly menuStyle = signal<Record<string, string>>({});
   protected readonly showLocalNotice = signal(true);
 
-  protected dismissLocalNotice(): void {
+  private async initLocalNotice(): Promise<void> {
+    const settings = await this.repositories.settings.get();
+    if (settings?.dismissedLocalDataNoticeAt) {
+      this.showLocalNotice.set(false);
+    }
+  }
+
+  protected async dismissLocalNotice(): Promise<void> {
     this.showLocalNotice.set(false);
+    const now = new Date().toISOString();
+    const existing = await this.repositories.settings.get() ?? { id: 'default', mapProvider: 'openfreemap', createdAt: now, updatedAt: now };
+    await this.repositories.settings.put({ ...existing, dismissedLocalDataNoticeAt: now, updatedAt: now });
   }
 
   private readonly filtersService = inject(FiltersService);
@@ -1377,6 +1410,7 @@ export class ActivitiesPageComponent {
 
   protected readonly statCount = computed(() => {
     const c = this.allFiltered().length;
+    if (c === 0 && this.status() === 'empty') { return '—'; }
     return `${c}`;
   });
 
@@ -1384,14 +1418,14 @@ export class ActivitiesPageComponent {
     const all = this.allFiltered();
     const totalDistanceMeters = all.reduce((s, a) => s + (a.distanceMeters ?? 0), 0);
     const distanceKm = totalDistanceMeters / 1000;
-    if (totalDistanceMeters === 0) { return '0 km'; }
+    if (totalDistanceMeters === 0) { return this.status() === 'empty' ? '—' : '0 km'; }
     return distanceKm >= 100 ? `${distanceKm.toFixed(0)} km` : `${distanceKm.toFixed(1)} km`;
   });
 
   protected readonly statMovingTime = computed(() => {
     const all = this.allFiltered();
     const totalMovingSeconds = all.reduce((s, a) => s + (a.movingTimeSeconds ?? 0), 0);
-    if (totalMovingSeconds === 0) { return '0h 0m'; }
+    if (totalMovingSeconds === 0) { return this.status() === 'empty' ? '—' : '0h 0m'; }
     return formatDurationHours(totalMovingSeconds);
   });
 
@@ -1450,6 +1484,7 @@ export class ActivitiesPageComponent {
 
   constructor() {
     this.loadPage(1);
+    this.initLocalNotice();
     globalThis.addEventListener('click', () => this.closeAllMenus());
     effect(() => {
       const focusId = this.focusActivityId();

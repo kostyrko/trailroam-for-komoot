@@ -309,3 +309,66 @@ p {
     width: 100%;
   }
 }
+
+.route-page--empty {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+}
+
+.route-page--empty .activities-header {
+  flex-shrink: 0;
+}
+
+.route-page--empty .empty-state--no-activities {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: none;
+  padding: 40px 20px;
+}
+
+.route-page--empty .empty-state--no-activities h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 12px 0 8px;
+}
+
+.route-page--empty .empty-state--no-activities p {
+  color: #63746a;
+  font-size: 0.875rem;
+  margin: 0 0 4px;
+  max-width: 400px;
+}
+
+.route-page--empty .empty-state--no-activities .privacy-note {
+  color: #859b8e;
+  font-size: 0.8125rem;
+  margin-top: 12px;
+}
+
+.route-page--empty .empty-state--no-activities .primary-action {
+  margin-top: 16px;
+}
+
+.route-page--empty .empty-state-kicker {
+  color: #859b8e;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.route-page--empty .activities-toolbar,
+.route-page--empty .stats-grid,
+.route-page--empty .local-data-notice,
+.route-page--empty .activities-count,
+.route-page--empty .activities-table-wrap,
+.route-page--empty .selected-actions-bar,
+.route-page--empty .pagination,
+.route-page--empty .page-size-control {
+  display: none;
+}
