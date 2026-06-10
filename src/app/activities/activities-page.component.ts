@@ -20,6 +20,7 @@ import { ConfirmService } from '../shared/confirm.service';
 import { GpxExportService } from '../shared/gpx-export.service';
 import { StravaSessionService } from '../strava/strava-session.service';
 import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
+import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import { type ActivityCategory, type ActivityRecord } from '../storage/storage.models';
 import { formatSportType, mapSportTypeToCategory } from '../strava/activity-category';
 
@@ -118,6 +119,7 @@ function routeStatusLabel(status: string): string {
 
 @Component({
   selector: 'app-activities-page',
+  imports: [LoadingSpinnerComponent],
   template: `
     <section class="route-page" aria-labelledby="activities-title" [class.route-page--empty]="status() === 'empty'">
 
@@ -133,10 +135,9 @@ function routeStatusLabel(status: string): string {
       </div>
 
       @if (status() === 'loading') {
-        <article class="empty-state" aria-label="Loading activities">
-          <p class="empty-state-kicker">Loading</p>
-          <p>Loading your local activities…</p>
-        </article>
+        <div class="loading-state" aria-label="Loading activities">
+          <app-loading-spinner />
+        </div>
       } @else {
         @if (showLocalNotice()) {
           <div class="local-data-notice" role="status">
@@ -459,6 +460,14 @@ function routeStatusLabel(status: string): string {
     </section>
   `,
   styles: [`
+    .loading-state {
+      align-items: center;
+      display: flex;
+      justify-content: center;
+      min-height: 200px;
+      width: 100%;
+    }
+
     .activities-header {
       margin-bottom: 16px;
     }

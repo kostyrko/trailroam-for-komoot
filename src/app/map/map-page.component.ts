@@ -12,6 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MapLibreMapComponent } from './maplibre-map.component';
 import { ElevationProfileComponent } from './elevation-profile.component';
+import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import { type MapRouteFeature } from './mock-routes';
 import { FiltersService, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual } from '../shared/filters.service';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
@@ -80,7 +81,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
 
 @Component({
   selector: 'app-map-page',
-  imports: [MapLibreMapComponent, ElevationProfileComponent],
+  imports: [MapLibreMapComponent, ElevationProfileComponent, LoadingSpinnerComponent],
   template: `
       @if (performanceWarning(); as warning) {
         <article class="notice-bar warning-state" role="alert">
@@ -176,7 +177,11 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
           }
         </div>
 
-        @if (!noRouteActivity() && !selectedRoute() && !selectedActivityId() && allRoutes().length === 0 && !mapEmptyDismissed()) {
+        @if (routesLoading()) {
+          <div class="map-loading-overlay">
+            <app-loading-spinner />
+          </div>
+        } @else if (!noRouteActivity() && !selectedRoute() && !selectedActivityId() && allRoutes().length === 0 && !mapEmptyDismissed()) {
           <div class="map-empty-overlay" (click)="dismissMapEmpty()">
             <article class="empty-state map-empty-modal" aria-labelledby="map-empty-title">
               <button class="map-empty-close" type="button" (click)="dismissMapEmpty(); $event.stopPropagation()" aria-label="Close empty state notice">&times;</button>
@@ -750,6 +755,19 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       pointer-events: auto;
     }
 
+    .map-loading-overlay {
+      align-items: center;
+      background: rgb(0 0 0 / 50%);
+      display: flex;
+      height: 100%;
+      justify-content: center;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 100%;
+      z-index: 200;
+    }
+
     .map-empty-overlay {
       align-items: center;
       background: rgb(0 0 0 / 10%);
@@ -821,6 +839,7 @@ export class MapPage implements AfterViewInit {
   protected readonly mapFullscreen = signal(false);
   private readonly perfWarningDismissed = signal(false);
 
+  protected readonly routesLoading = signal(true);
   protected readonly mapEmptyDismissed = signal(false);
 
   protected dismissMapEmpty(): void {
@@ -1045,6 +1064,8 @@ export class MapPage implements AfterViewInit {
 
       this.renderRoutesOnMap();
     } catch {
+    } finally {
+      this.routesLoading.set(false);
     }
   }
 
