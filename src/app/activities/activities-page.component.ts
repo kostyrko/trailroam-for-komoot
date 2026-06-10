@@ -277,8 +277,7 @@ function routeStatusLabel(status: string): string {
           </div>
         </div>
 
-        @if (selectionCount() > 0) {
-          <div class="selected-actions-bar">
+        <div class="selected-actions-bar" [class.selected-actions-bar--active]="selectionCount() > 0">
             <div class="selected-actions-bar__summary">
               <svg class="selected-actions-bar__check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               <span>{{ selectionCount() === 1 ? '1 activity selected' : selectionCount() + ' activities selected' }}</span>
@@ -298,7 +297,6 @@ function routeStatusLabel(status: string): string {
               </button>
             </div>
           </div>
-        }
 
         @if (status() !== 'empty') {
         <p class="activities-count">
@@ -785,22 +783,33 @@ function routeStatusLabel(status: string): string {
 
     .selected-actions-bar {
       align-items: center;
-      background: #1f6f50;
+      background: #eef5f0;
+      border: 1px solid #dce6df;
       border-radius: 10px;
       display: flex;
       gap: 12px;
       justify-content: space-between;
       margin-bottom: 0;
       padding: 10px 16px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .selected-actions-bar.selected-actions-bar--active {
+      background: #1f6f50;
+      border-color: #1f6f50;
     }
 
     .selected-actions-bar__summary {
       align-items: center;
-      color: #ffffff;
+      color: #63746a;
       display: inline-flex;
       font-size: 0.875rem;
       font-weight: 700;
       gap: 8px;
+    }
+
+    .selected-actions-bar--active .selected-actions-bar__summary {
+      color: #ffffff;
     }
 
     .selected-actions-bar__check {
@@ -815,10 +824,10 @@ function routeStatusLabel(status: string): string {
 
     .selected-action {
       align-items: center;
-      background: rgb(255 255 255 / 12%);
-      border: 1px solid rgb(255 255 255 / 25%);
+      background: transparent;
+      border: 1px solid #cbd8d0;
       border-radius: 8px;
-      color: #ffffff;
+      color: #314b3f;
       cursor: pointer;
       display: inline-flex;
       font: inherit;
@@ -831,18 +840,31 @@ function routeStatusLabel(status: string): string {
     }
 
     .selected-action:hover {
-      background: rgb(255 255 255 / 20%);
+      background: #d6e8dc;
+      border-color: #b6cdbe;
     }
 
-    .selected-action--secondary:hover {
-      background: rgb(255 255 255 / 20%);
+    .selected-actions-bar--active .selected-action {
+      background: rgb(255 255 255 / 12%);
+      border-color: rgb(255 255 255 / 25%);
+      color: #ffffff;
     }
 
-    .selected-action--danger {
+    .selected-actions-bar--active .selected-action:hover {
+      background: rgb(255 255 255 / 30%);
+      border-color: rgb(255 255 255 / 50%);
+    }
+
+    .selected-actions-bar--active .selected-action--secondary:hover {
+      background: rgb(255 255 255 / 30%);
+      border-color: rgb(255 255 255 / 50%);
+    }
+
+    .selected-actions-bar--active .selected-action--danger {
       border-color: rgb(255 255 255 / 35%);
     }
 
-    .selected-action--danger:hover {
+    .selected-actions-bar--active .selected-action--danger:hover {
       background: #8f2d22;
       border-color: #8f2d22;
     }
