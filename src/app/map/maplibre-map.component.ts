@@ -119,11 +119,14 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     this.basemapProviderService.setProvider(config);
     const map = this.mapInstance;
     if (!map) { return; }
+    this.pendingReadyTasks = [];
     map.setStyle(config.styleUrl!);
     map.once('style.load', () => {
       this.routeRendererService.init(map);
-      if (this.pendingReadyTasks) {
-        this.pendingReadyTasks = [];
+      const tasks = this.pendingReadyTasks;
+      this.pendingReadyTasks = null;
+      if (tasks) {
+        for (const t of tasks) { t(); }
       }
       this.rerenderRoutes();
     });
@@ -137,12 +140,20 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
 
   renderRouteFeatures(routes: MapRouteFeature[], selectedId?: string): void {
     this.cachedRoutes = routes;
-    if (this.mapInstance?.getSource('routes')) {
+    const map = this.mapInstance;
+    if (!map) { return; }
+    if (!map.isStyleLoaded()) {
+      if (this.pendingReadyTasks) {
+        this.pendingReadyTasks.push(() => this.renderRouteFeatures(routes, selectedId));
+      }
+      return;
+    }
+    if (map.getSource('routes')) {
       this.rerenderRoutes();
     } else {
       this.routeRendererService.renderRoutes(routes, (route) => this.routeSelected.emit(route));
     }
-    if (selectedId && this.mapInstance) {
+    if (selectedId) {
       const selected = routes.find((r) => r.activityId === selectedId || r.activity.id === selectedId);
       if (selected) {
         this.routeRendererService.selectRoute(selectedId);

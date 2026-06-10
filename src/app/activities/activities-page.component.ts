@@ -1061,10 +1061,64 @@ function routeStatusLabel(status: string): string {
       margin-top: 12px;
     }
 
-    .page-size-select .custom-select-trigger {
-      min-height: 32px;
+    .page-size-control .filter-label {
+      color: #63746a;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .custom-select {
+      cursor: pointer;
+      outline: none;
+      position: relative;
+      user-select: none;
+    }
+
+    .custom-select-trigger {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 6px;
+      color: #14211b;
+      display: inline-flex;
+      font-size: 0.875rem;
+      font-weight: 600;
+      gap: 8px;
+      min-height: 34px;
       min-width: 60px;
-      padding: 4px 10px;
+      padding: 4px 12px;
+    }
+
+    .select-arrow {
+      color: #a0b4a6;
+      font-size: 0.75rem;
+    }
+
+    .custom-select-options {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgb(20 33 27 / 15%);
+      left: 0;
+      list-style: none;
+      margin: 4px 0 0;
+      min-width: 100%;
+      padding: 4px;
+      position: absolute;
+      top: 100%;
+      z-index: 20;
+    }
+
+    .custom-select-options li {
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 6px 12px;
+      white-space: nowrap;
+    }
+
+    .custom-select-options li:hover,
+    .custom-select-options li.active {
+      background: #eef5f0;
     }
 
     .page-btn {
