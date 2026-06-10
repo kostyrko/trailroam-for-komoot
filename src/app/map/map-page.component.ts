@@ -101,91 +101,94 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
         </article>
       }
 
-    <section class="route-page" aria-labelledby="map-title">
-
-      <div class="activities-toolbar map-toolbar">
-        <div class="toolbar-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()" aria-label="Filter by activity type">
-          <span class="toolbar-select__trigger">
-            @if (sportTypeFilter(); as sel) {
-              @if (sel.startsWith('__cat__')) {
-                {{ sel.slice(7) }}
-              } @else {
-                {{ formatSportType(sel) }}
-              }
-            } @else {
-              All Activities
-            }
-            <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
-          @if (filterMenuOpen()) {
-            <ul class="toolbar-select__options sport-type-filter" (mousedown)="$event.preventDefault()">
-              <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All Activities</li>
-              @for (group of sportTypeGroups(); track group.category) {
-                <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
-                  <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
-                </li>
-                @for (st of group.sportTypes; track st) {
-                  <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
-                    <span class="sport-type-label">{{ formatSportType(st) }}</span>
-                  </li>
-                }
-              }
-            </ul>
-          }
-        </div>
-
-        <div class="toolbar-select" tabindex="0" (click)="datePresetOpen.set(!datePresetOpen())" (keydown.enter)="datePresetOpen.set(!datePresetOpen())" (blur)="datePresetOpen.set(false)" aria-label="Filter by date range">
-          <span class="toolbar-select__trigger">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            {{ datePresetLabel() }}
-            <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
-          @if (datePresetOpen()) {
-            <ul class="toolbar-select__options" (mousedown)="$event.preventDefault()">
-              <li role="option" (click)="applyDatePreset('all')" [class.active]="datePreset() === 'all'">All dates</li>
-              <li role="option" (click)="applyDatePreset('7d')" [class.active]="datePreset() === '7d'">Last 7 days</li>
-              <li role="option" (click)="applyDatePreset('30d')" [class.active]="datePreset() === '30d'">Last 30 days</li>
-              <li role="option" (click)="applyDatePreset('year')" [class.active]="datePreset() === 'year'">This year</li>
-              <li role="option" (click)="applyDatePreset('custom')" [class.active]="datePreset() === 'custom'">Custom range</li>
-            </ul>
-          }
-        </div>
-
-        @if (datePreset() === 'custom') {
-          <div class="custom-date-fields">
-            <label class="custom-date-field">
-              <span class="custom-date-label">From</span>
-              <input
-                class="custom-date-input"
-                type="date"
-                [value]="formatDateInput(filtersService.dateFrom())"
-                (change)="onDateFromChange($any($event.target).value)"
-              />
-            </label>
-            <label class="custom-date-field">
-              <span class="custom-date-label">To</span>
-              <input
-                class="custom-date-input"
-                type="date"
-                [value]="formatDateInput(filtersService.dateTo())"
-                (change)="onDateToChange($any($event.target).value)"
-              />
-            </label>
-          </div>
-        }
-      </div>
+    <section class="map-page-layout" aria-labelledby="map-title">
 
       @if (!hasBasemapError()) {
-        @if (!noRouteActivity() && !selectedRoute() && !selectedActivityId() && allRoutes().length === 0) {
-          <article class="empty-state map-empty-state" aria-labelledby="map-empty-title">
-            <p class="empty-state-kicker">No routes yet</p>
-            <h2 id="map-empty-title">Synced GPS routes will appear here.</h2>
-            <p>
-              Start a sync to import Strava activities and show available route lines on this map.
-            </p>
-            <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
-            <button class="primary-action" type="button" (click)="syncActivities()">Sync activities</button>
-          </article>
+        <div class="map-filters-overlay">
+          <div class="toolbar-select" tabindex="0" (click)="toggleFilterMenu()" (keydown.enter)="toggleFilterMenu()" (blur)="closeFilterMenu()" aria-label="Filter by activity type">
+            <span class="toolbar-select__trigger">
+              @if (sportTypeFilter(); as sel) {
+                @if (sel.startsWith('__cat__')) {
+                  {{ sel.slice(7) }}
+                } @else {
+                  {{ formatSportType(sel) }}
+                }
+              } @else {
+                All Activities
+              }
+              <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            @if (filterMenuOpen()) {
+              <ul class="toolbar-select__options sport-type-filter" (mousedown)="$event.preventDefault()">
+                <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All Activities</li>
+                @for (group of sportTypeGroups(); track group.category) {
+                  <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
+                  </li>
+                  @for (st of group.sportTypes; track st) {
+                    <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
+                      <span class="sport-type-label">{{ formatSportType(st) }}</span>
+                    </li>
+                  }
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="toolbar-select" tabindex="0" (click)="datePresetOpen.set(!datePresetOpen())" (keydown.enter)="datePresetOpen.set(!datePresetOpen())" (blur)="datePresetOpen.set(false)" aria-label="Filter by date range">
+            <span class="toolbar-select__trigger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              {{ datePresetLabel() }}
+              <svg class="toolbar-select__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+            @if (datePresetOpen()) {
+              <ul class="toolbar-select__options" (mousedown)="$event.preventDefault()">
+                <li role="option" (click)="applyDatePreset('all')" [class.active]="datePreset() === 'all'">All dates</li>
+                <li role="option" (click)="applyDatePreset('7d')" [class.active]="datePreset() === '7d'">Last 7 days</li>
+                <li role="option" (click)="applyDatePreset('30d')" [class.active]="datePreset() === '30d'">Last 30 days</li>
+                <li role="option" (click)="applyDatePreset('year')" [class.active]="datePreset() === 'year'">This year</li>
+                <li role="option" (click)="applyDatePreset('custom')" [class.active]="datePreset() === 'custom'">Custom range</li>
+              </ul>
+            }
+          </div>
+
+          @if (datePreset() === 'custom') {
+            <div class="custom-date-fields">
+              <label class="custom-date-field">
+                <span class="custom-date-label">From</span>
+                <input
+                  class="custom-date-input"
+                  type="date"
+                  [value]="formatDateInput(filtersService.dateFrom())"
+                  (change)="onDateFromChange($any($event.target).value)"
+                />
+              </label>
+              <label class="custom-date-field">
+                <span class="custom-date-label">To</span>
+                <input
+                  class="custom-date-input"
+                  type="date"
+                  [value]="formatDateInput(filtersService.dateTo())"
+                  (change)="onDateToChange($any($event.target).value)"
+                />
+              </label>
+            </div>
+          }
+        </div>
+
+        @if (!noRouteActivity() && !selectedRoute() && !selectedActivityId() && allRoutes().length === 0 && !mapEmptyDismissed()) {
+          <div class="map-empty-overlay" (click)="dismissMapEmpty()">
+            <article class="empty-state map-empty-modal" aria-labelledby="map-empty-title">
+              <button class="map-empty-close" type="button" (click)="dismissMapEmpty(); $event.stopPropagation()" aria-label="Close empty state notice">&times;</button>
+              <p class="empty-state-kicker">No routes yet</p>
+              <h2 id="map-empty-title">Synced GPS routes will appear here.</h2>
+              <p>
+                Start a sync to import Strava activities and show available route lines on this map.
+              </p>
+              <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
+              <button class="primary-action" type="button" (click)="syncActivities()">Sync activities</button>
+            </article>
+          </div>
         }
         <app-maplibre-map
           [fullscreenOverride]="mapFullscreen()"
@@ -713,10 +716,107 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       background: #fdf3d1;
     }
 
-    .map-empty-state {
-      margin-bottom: 12px;
+    .map-page-layout {
+      display: flex;
+      flex-direction: column;
+      height: calc(100dvh - 64px);
+      position: relative;
+    }
+
+    .map-page-layout ::ng-deep app-maplibre-map {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      position: relative;
+    }
+
+    .map-page-layout ::ng-deep .map-shell {
+      flex: 1;
+      height: auto;
+      margin: 0;
+      min-height: 0;
+    }
+
+    .map-page-layout ::ng-deep .map-shell.map-fullscreen {
+      position: fixed;
+    }
+
+    .map-page-layout ::ng-deep .maplibregl-ctrl-top-right {
+      z-index: 150 !important;
+    }
+
+    .map-page-layout ::ng-deep .maplibregl-ctrl-group {
+      z-index: 150 !important;
+    }
+
+    .map-page-layout ::ng-deep .maplibregl-ctrl-group button {
+      z-index: 150 !important;
+      position: relative;
+    }
+
+    .map-page-layout ::ng-deep .map-fit-btn {
+      z-index: 150 !important;
+    }
+
+    .map-filters-overlay {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      left: 0;
+      padding: 10px 14px;
+      pointer-events: none;
+      position: absolute;
+      top: 0;
       width: 100%;
-      box-sizing: border-box;
+      z-index: 100;
+    }
+
+    .map-filters-overlay .toolbar-select,
+    .map-filters-overlay .custom-date-fields {
+      pointer-events: auto;
+    }
+
+    .map-empty-overlay {
+      align-items: center;
+      background: rgb(0 0 0 / 10%);
+      display: flex;
+      height: 100%;
+      justify-content: center;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 100%;
+      z-index: 200;
+    }
+
+    .map-empty-modal {
+      margin-top: 0;
+      position: relative;
+    }
+
+    .map-empty-close {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      color: #a0b4a6;
+      cursor: pointer;
+      display: inline-flex;
+      font-size: 1.5rem;
+      justify-content: center;
+      line-height: 1;
+      min-height: 28px;
+      min-width: 28px;
+      padding: 0;
+      position: absolute;
+      right: 8px;
+      top: 8px;
+    }
+
+    .map-empty-close:hover {
+      color: #63746a;
     }
 
     `],
@@ -749,6 +849,12 @@ export class MapPage implements AfterViewInit {
   protected readonly filterMenuOpen = signal(false);
   protected readonly mapFullscreen = signal(false);
   private readonly perfWarningDismissed = signal(false);
+
+  protected readonly mapEmptyDismissed = signal(false);
+
+  protected dismissMapEmpty(): void {
+    this.mapEmptyDismissed.set(true);
+  }
 
   protected readonly sportTypeFilter = signal<string | null>(null);
   protected readonly detailMenuOpen = signal(false);
