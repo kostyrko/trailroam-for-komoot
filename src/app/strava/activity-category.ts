@@ -97,3 +97,7 @@ export function formatSportType(sportType: string): string {
   if (special) { return special; }
   return sportType.replace(/([A-Z])/g, ' $1').trim();
 }
+
+export function formatCategory(cat: string): string {
+  return cat.toUpperCase();
+}

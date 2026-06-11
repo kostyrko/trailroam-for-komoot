@@ -26,7 +26,7 @@ import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import { RouteSparklineComponent } from './route-sparkline.component';
 import { ActivityDetailPanelComponent } from './activity-detail-panel.component';
 import { type ActivityCategory, type ActivityRecord, type ActivityRouteRecord } from '../storage/storage.models';
-import { formatSportType, mapSportTypeToCategory } from '../strava/activity-category';
+import { formatSportType, formatCategory, mapSportTypeToCategory } from '../strava/activity-category';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
 
@@ -176,9 +176,9 @@ function routeStatusLabel(status: string): string {
             <span class="toolbar-select__trigger">
               @if (sportTypeFilter(); as sel) {
                 @if (sel.startsWith('__cat__')) {
-                  {{ sel.slice(7) }}
+                  <span class="cat-dot" [style.background]="CATEGORY_COLORS[sel.slice(7)]"></span>{{ formatCategory(sel.slice(7)) }}
                 } @else {
-                  {{ formatSportType(sel) }}
+                  <span class="cat-dot" [style.background]="CATEGORY_COLORS[mapSportTypeToCategory(sel)]"></span>{{ formatSportType(sel) }}
                 }
               } @else {
                 All Activities
@@ -190,7 +190,7 @@ function routeStatusLabel(status: string): string {
                 <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All Activities</li>
                 @for (group of sportTypeGroups(); track group.category) {
                   <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
-                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ formatCategory(group.category) }}
                   </li>
                   @for (st of group.sportTypes; track st) {
                     <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
@@ -1923,6 +1923,8 @@ export class ActivitiesPageComponent {
   protected routeStatusLabel = routeStatusLabel;
   protected formatDateInput = formatDateInput;
   protected formatSportType = formatSportType;
+  protected formatCategory = formatCategory;
+  protected mapSportTypeToCategory = mapSportTypeToCategory;
   protected sportTypeEmoji = (cat: string): string => CATEGORY_EMOJI[cat] ?? '🏋️';
 
   protected categoryTagBg = (cat: string): string => {

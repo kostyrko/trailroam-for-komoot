@@ -19,7 +19,7 @@ import { FiltersService, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual, type 
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { RouteRendererService } from './route-renderer.service';
 import { type ActivityCategory } from '../storage/storage.models';
-import { formatSportType, mapSportTypeToCategory } from '../strava/activity-category';
+import { formatSportType, formatCategory, mapSportTypeToCategory } from '../strava/activity-category';
 import { ToastService } from '../shared/toast.service';
 import { DataRefreshService } from '../shared/data-refresh.service';
 import { GpxExportService } from '../shared/gpx-export.service';
@@ -112,9 +112,9 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
             <span class="toolbar-select__trigger">
               @if (sportTypeFilter(); as sel) {
                 @if (sel.startsWith('__cat__')) {
-                  {{ sel.slice(7) }}
+                  <span class="cat-dot" [style.background]="CATEGORY_COLORS[sel.slice(7)]"></span>{{ formatCategory(sel.slice(7)) }}
                 } @else {
-                  {{ formatSportType(sel) }}
+                  <span class="cat-dot" [style.background]="CATEGORY_COLORS[mapSportTypeToCategory(sel)]"></span>{{ formatSportType(sel) }}
                 }
               } @else {
                 All Activities
@@ -126,7 +126,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                 <li role="option" (click)="onSportTypeChange('')" [class.active]="!sportTypeFilter()">All Activities</li>
                 @for (group of sportTypeGroups(); track group.category) {
                   <li class="sport-type-group-header" role="option" (click)="onCategoryFilterChange(group.category)" [class.active]="sportTypeFilter() === '__cat__' + group.category">
-                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ group.category }}
+                    <span class="cat-dot" [style.background]="CATEGORY_COLORS[group.category]"></span>{{ formatCategory(group.category) }}
                   </li>
                   @for (st of group.sportTypes; track st) {
                     <li class="sport-type-option" role="option" (click)="onSportTypeChange(st)" [class.active]="sportTypeFilter() === st">
@@ -1092,6 +1092,8 @@ export class MapPage implements AfterViewInit {
   protected formatDate = formatDate;
   protected formatDateInput = formatDateInput;
   protected formatSportType = formatSportType;
+  protected formatCategory = formatCategory;
+  protected mapSportTypeToCategory = mapSportTypeToCategory;
   protected onDateFromChange = this.filtersService.setDateFrom.bind(this.filtersService);
   protected onDateToChange = this.filtersService.setDateTo.bind(this.filtersService);
 
