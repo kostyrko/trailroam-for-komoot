@@ -185,6 +185,15 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
           <div class="map-loading-overlay">
             <app-loading-spinner />
           </div>
+        } @else if (allRoutes().length > 0 && filteredRoutes().length === 0 && !mapFilterEmptyDismissed()) {
+          <div class="map-empty-overlay" (click)="dismissMapFilterEmpty()">
+            <article class="empty-state map-empty-modal" aria-labelledby="map-empty-match-title">
+              <button class="map-empty-close" type="button" (click)="dismissMapFilterEmpty(); $event.stopPropagation()" aria-label="Close empty state notice">&times;</button>
+              <p class="empty-state-kicker">No matching activities</p>
+              <h2 id="map-empty-match-title">No activities match your filters.</h2>
+              <p>Try adjusting your search or filter criteria to find what you're looking for.</p>
+            </article>
+          </div>
         } @else if (!noRouteActivity() && !selectedRoute() && !selectedActivityId() && allRoutes().length === 0 && !mapEmptyDismissed()) {
           <div class="map-empty-overlay" (click)="dismissMapEmpty()">
             <article class="empty-state map-empty-modal" aria-labelledby="map-empty-title">
@@ -860,9 +869,14 @@ export class MapPage implements AfterViewInit {
 
   protected readonly routesLoading = signal(true);
   protected readonly mapEmptyDismissed = signal(false);
+  protected readonly mapFilterEmptyDismissed = signal(false);
 
   protected dismissMapEmpty(): void {
     this.mapEmptyDismissed.set(true);
+  }
+
+  protected dismissMapFilterEmpty(): void {
+    this.mapFilterEmptyDismissed.set(true);
   }
 
   protected readonly sportTypeFilter = this.filtersService.sportTypeFilter;
@@ -1034,8 +1048,13 @@ export class MapPage implements AfterViewInit {
       this.loadRoutes();
     });
     effect(() => {
-      this.filteredRoutes();
+      const filtered = this.filteredRoutes();
       this.renderRoutesOnMap();
+      if (this.allRoutes().length > 0 && filtered.length === 0) {
+        this.mapFilterEmptyDismissed.set(false);
+        this.closeFilterMenu();
+        this.datePresetOpen.set(false);
+      }
     });
   }
 

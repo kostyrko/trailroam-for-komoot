@@ -472,11 +472,13 @@ function routeStatusLabel(status: string): string {
 
         @if (filteredActivities(); as pageItems) {
           @if (pageItems.length === 0 && status() !== 'empty') {
-            <article class="empty-state empty-state--no-match" aria-labelledby="activities-empty-match-title">
-              <p class="empty-state-kicker">No matching activities</p>
-              <h2 id="activities-empty-match-title">No activities match your filters.</h2>
-              <p>Try adjusting your search or filter criteria to find what you're looking for.</p>
-            </article>
+            <div class="empty-state-match-wrapper">
+              <article class="empty-state empty-state--no-match" aria-labelledby="activities-empty-match-title">
+                <p class="empty-state-kicker">No matching activities</p>
+                <h2 id="activities-empty-match-title">No activities match your filters.</h2>
+                <p>Try adjusting your search or filter criteria to find what you're looking for.</p>
+              </article>
+            </div>
           }
         }
 
@@ -491,6 +493,14 @@ function routeStatusLabel(status: string): string {
     </section>
   `,
   styles: [`
+    .empty-state-match-wrapper {
+      align-items: center;
+      display: flex;
+      justify-content: center;
+      min-height: 200px;
+      width: 100%;
+    }
+
     .loading-state {
       align-items: center;
       display: flex;
