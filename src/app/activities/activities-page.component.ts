@@ -2001,7 +2001,7 @@ function compareActivities(a: ActivityRecord, b: ActivityRecord, column: SortCol
     case 'distance':
       return (a.distanceMeters ?? 0) - (b.distanceMeters ?? 0);
     case 'speed':
-      return (a.averageSpeedMetersPerSecond ?? 0) - (b.averageSpeedMetersPerSecond ?? 0);
+      return (computeSpeed(a.averageSpeedMetersPerSecond, a.distanceMeters, a.movingTimeSeconds) ?? 0) - (computeSpeed(b.averageSpeedMetersPerSecond, b.distanceMeters, b.movingTimeSeconds) ?? 0);
     case 'time':
       return (a.movingTimeSeconds ?? 0) - (b.movingTimeSeconds ?? 0);
     case 'route':
