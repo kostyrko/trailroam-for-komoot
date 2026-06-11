@@ -1125,6 +1125,9 @@ export class MapPage implements AfterViewInit {
 
   protected selectRoute(route: MapRouteFeature): void {
     this.selectedMapRoute.set(route);
+    if (this.selectedActivityId()) {
+      this.router.navigate(['/map'], { queryParams: {}, replaceUrl: true });
+    }
     setTimeout(() => {
       document.querySelector('.route-detail')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 0);
