@@ -458,6 +458,12 @@ const SPEED_COLORS = [
     }
     .panel-elevation {
       margin: 0 16px;
+      min-width: calc(100% - 32px);
+    }
+    .panel-expanded .panel-elevation {
+      margin: 0 auto;
+      min-width: 488px;
+      width: auto;
     }
     .panel-elevation :deep(.elevation-chart-wrap) {
       width: 100% !important;
