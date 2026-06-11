@@ -21,7 +21,8 @@ import { GpxExportService } from '../shared/gpx-export.service';
 import { StravaSessionService } from '../strava/strava-session.service';
 import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
-import { type ActivityCategory, type ActivityRecord } from '../storage/storage.models';
+import { RouteSparklineComponent } from './route-sparkline.component';
+import { type ActivityCategory, type ActivityRecord, type ActivityRouteRecord } from '../storage/storage.models';
 import { formatSportType, mapSportTypeToCategory } from '../strava/activity-category';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
@@ -119,7 +120,7 @@ function routeStatusLabel(status: string): string {
 
 @Component({
   selector: 'app-activities-page',
-  imports: [LoadingSpinnerComponent],
+  imports: [LoadingSpinnerComponent, RouteSparklineComponent],
   template: `
     <section class="route-page" aria-labelledby="activities-title" [class.route-page--empty]="status() === 'empty'">
 
@@ -322,6 +323,7 @@ function routeStatusLabel(status: string): string {
                   />
                 </th>
                 <th scope="col" class="sortable" (click)="onSort('date')">Date{{ sortIndicator('date') }}</th>
+                <th scope="col" class="col-sparkline"></th>
                 <th scope="col" class="sortable" (click)="onSort('name')">Name{{ sortIndicator('name') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('type')">Type{{ sortIndicator('type') }}</th>
                 <th scope="col" class="sortable" (click)="onSort('distance')">Distance{{ sortIndicator('distance') }}</th>
@@ -343,6 +345,12 @@ function routeStatusLabel(status: string): string {
                     />
                   </td>
                   <td class="cell-date cell-date-secondary">{{ formatDate(activity.startDate) }}</td>
+                  <td class="cell-sparkline" (click)="$event.stopPropagation()">
+                    @if (!routesCacheFilled() && activity.hasRoute) {
+                      <span class="sparkline-loading" aria-label="Loading route preview"></span>
+                    }
+                    <app-route-sparkline [coordinates]="getRouteCoords(activity.id)" />
+                  </td>
                   <td class="cell-name cell-name-bold">{{ activity.name }}</td>
                   <td><span class="category-tag" [style.background]="categoryTagBg(activity.activityCategory)" [style.color]="categoryTagFg(activity.activityCategory)"><span class="cat-emoji">{{ sportTypeEmoji(activity.activityCategory) }}</span>{{ formatSportType(activity.sportType) }}</span></td>
                   <td class="cell-num cell-distance-bold">{{ formatDistance(activity.distanceMeters) }}</td>
@@ -353,7 +361,19 @@ function routeStatusLabel(status: string): string {
                       >{{ routeStatusLabel(activity.routeSyncStatus) }}</span>
                   </td>
                   <td class="cell-actions">
-                    <div class="activity-menu-wrapper">
+                    <div class="activity-actions-cell">
+                      @if (activity.hasRoute) {
+                        <button
+                          class="map-nav-btn"
+                          type="button"
+                          (click)="navigateToMap($event, activity)"
+                          attr.aria-label="View '{{ activity.name }}' on map"
+                          title="View on map"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                        </button>
+                      }
+                      <div class="activity-menu-wrapper">
                       <button
                         class="activity-menu-trigger"
                         type="button"
@@ -389,6 +409,7 @@ function routeStatusLabel(status: string): string {
                           </li>
                         </ul>
                       }
+                    </div>
                     </div>
                   </td>
                 </tr>
@@ -979,6 +1000,7 @@ function routeStatusLabel(status: string): string {
 
     .cell-date {
       color: #63746a;
+      max-width: 110px;
       white-space: nowrap;
     }
 
@@ -1169,14 +1191,76 @@ function routeStatusLabel(status: string): string {
       font-size: 0.8125rem;
     }
 
-    .col-actions-header {
+    .col-sparkline {
       width: 56px;
+      padding: 4px 6px;
+    }
+
+    .cell-sparkline {
+      padding: 4px 6px;
+      text-align: center;
+      vertical-align: middle;
+      width: 56px;
+    }
+
+    .cell-sparkline svg {
+      display: block;
+      margin: 0 auto;
+    }
+
+    .sparkline-loading {
+      display: inline-block;
+      width: 44px;
+      height: 32px;
+      background: linear-gradient(90deg, #eef5f0 25%, #dce6df 50%, #eef5f0 75%);
+      background-size: 80px 32px;
+      border-radius: 3px;
+      animation: sparkline-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes sparkline-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .col-actions-header {
+      width: 80px;
     }
 
     .cell-actions {
       padding: 4px 8px;
       text-align: center;
-      width: 56px;
+      width: 80px;
+    }
+
+    .activity-actions-cell {
+      align-items: center;
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .map-nav-btn {
+      align-items: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #a0b4a6;
+      cursor: pointer;
+      display: inline-flex;
+      justify-content: center;
+      min-height: 32px;
+      min-width: 32px;
+      padding: 0;
+    }
+
+    .map-nav-btn:hover {
+      background: #eef5f0;
+      border-color: #dce6df;
+      color: #1f6f50;
+    }
+
+    .map-nav-btn svg {
+      display: block;
     }
 
     .activity-menu-wrapper {
@@ -1345,6 +1429,8 @@ export class ActivitiesPageComponent {
   protected readonly selectedIds = signal<Set<string>>(new Set());
   protected readonly menuStyle = signal<Record<string, string>>({});
   protected readonly showLocalNotice = signal(true);
+  private readonly routesCache = new Map<string, [number, number][]>();
+  protected readonly routesCacheFilled = signal(false);
 
   private async initLocalNotice(): Promise<void> {
     const settings = await this.repositories.settings.get();
@@ -1709,6 +1795,15 @@ export class ActivitiesPageComponent {
     }
   }
 
+  protected navigateToMap(event: MouseEvent, activity: ActivityRecord): void {
+    event.stopPropagation();
+    this.router.navigate(['/map'], { queryParams: { activityId: activity.id } });
+  }
+
+  protected getRouteCoords(activityId: string): [number, number][] | null {
+    return this.routesCache.get(activityId) ?? null;
+  }
+
   protected toggleActivityMenu(event: MouseEvent, activityId: string): void {
     event.stopPropagation();
     const opening = this.openMenuId() !== activityId;
@@ -1840,6 +1935,17 @@ export class ActivitiesPageComponent {
       this.totalCount.set(total);
       this.activities.set(items);
       this.status.set(items.length === 0 ? 'empty' : 'loaded');
+
+      const routeIds = items.filter((a) => a.hasRoute && !this.routesCache.has(a.id)).map((a) => a.id);
+      if (routeIds.length > 0) {
+        const routes = await Promise.all(routeIds.map((id) => this.repositories.activityRoutes.get(id)));
+        for (const route of routes) {
+          if (route) {
+            this.routesCache.set(route.activityId, route.coordinates);
+          }
+        }
+      }
+      this.routesCacheFilled.set(true);
     } catch {
       this.status.set('empty');
     }
