@@ -894,6 +894,16 @@ export class MapPage implements AfterViewInit {
       return;
     }
     if (preset === 'custom') {
+      const routes = this.allRoutes();
+      if (routes.length > 0) {
+        const dates = routes.map((r) => new Date(r.activity.startDate).getTime()).filter((t) => !isNaN(t));
+        if (dates.length > 0) {
+          const minDate = new Date(Math.min(...dates));
+          const maxDate = new Date(Math.max(...dates));
+          this.filtersService.setDateFrom(minDate.toISOString().slice(0, 10));
+          this.filtersService.setDateTo(maxDate.toISOString().slice(0, 10));
+        }
+      }
       return;
     }
     const now = new Date();

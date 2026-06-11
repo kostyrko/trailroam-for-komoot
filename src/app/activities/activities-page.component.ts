@@ -1480,6 +1480,16 @@ export class ActivitiesPageComponent {
       return;
     }
     if (preset === 'custom') {
+      const items = this.activities();
+      if (items && items.length > 0) {
+        const dates = items.map((a) => new Date(a.startDate).getTime()).filter((t) => !isNaN(t));
+        if (dates.length > 0) {
+          const minDate = new Date(Math.min(...dates));
+          const maxDate = new Date(Math.max(...dates));
+          this.filtersService.setDateFrom(minDate.toISOString().slice(0, 10));
+          this.filtersService.setDateTo(maxDate.toISOString().slice(0, 10));
+        }
+      }
       this.clearSelection();
       return;
     }
