@@ -8,6 +8,7 @@ import { SyncHistoryService, type SyncTrigger } from './storage/sync-history.ser
 import { LocalDataService } from './storage/local-data.service';
 import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.token';
 import { DataRefreshService } from './shared/data-refresh.service';
+import { KomootAuthService } from './komoot/komoot-auth.service';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +20,7 @@ export class App {
   private readonly syncSummaryService = inject(SyncSummaryService);
   private readonly localDataService = inject(LocalDataService);
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
-  // TODO: inject KomootServices once implemented
+  protected readonly komootAuth = inject(KomootAuthService);
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
   private readonly dataRefresh = inject(DataRefreshService);
@@ -37,6 +38,7 @@ export class App {
     this.loadSyncSummary();
     this.loadLastSyncLabel();
     this.listenForMessages();
+    this.komootAuth.loadAuthState();
     globalThis.addEventListener('click', () => this.closeSyncMenu());
   }
 

@@ -15,17 +15,21 @@ export class KomootAuthService {
   readonly connectionState = signal<KomootAuthState | null>(null);
   readonly isConnecting = signal(false);
   readonly connectionError = signal<string | null>(null);
+  readonly isVerifying = signal(false);
+  readonly authInvalid = signal(false);
 
   async loadAuthState(): Promise<void> {
     try {
       const settings = await this.repositories.settings.get();
       if (settings?.komootUserId && settings?.komootToken) {
-        this.connectionState.set({
-          connected: true,
+        const candidate: KomootAuthState = {
+          connected: false,
           userId: settings.komootUserId,
           token: settings.komootToken,
           displayName: settings.komootDisplayName ?? '',
-        });
+        };
+        this.connectionState.set(candidate);
+        await this.verifyToken();
       } else {
         this.connectionState.set(null);
       }
@@ -34,9 +38,44 @@ export class KomootAuthService {
     }
   }
 
+  async verifyToken(): Promise<boolean> {
+    const creds = this.getCredentials();
+    if (!creds) { return false; }
+    this.isVerifying.set(true);
+    try {
+      const response = await fetch(
+        `https://api.komoot.de/v007/users/${creds.userId}/tours/?page=0`,
+        {
+          headers: {
+            Authorization: `Basic ${btoa(`${creds.userId}:${creds.token}`)}`,
+          },
+        },
+      );
+      if (response.ok) {
+        this.connectionState.set({
+          connected: true,
+          userId: creds.userId,
+          token: creds.token,
+          displayName: this.connectionState()?.displayName ?? '',
+        });
+        return true;
+      }
+      if (response.status === 401 || response.status === 403) {
+        this.invalidateToken();
+        return false;
+      }
+      return this.connectionState()?.connected ?? false;
+    } catch {
+      return this.connectionState()?.connected ?? false;
+    } finally {
+      this.isVerifying.set(false);
+    }
+  }
+
   async connect(email: string, password: string): Promise<void> {
     this.isConnecting.set(true);
     this.connectionError.set(null);
+    this.authInvalid.set(false);
 
     try {
       const response = await fetch(
@@ -85,6 +124,11 @@ export class KomootAuthService {
     } finally {
       this.isConnecting.set(false);
     }
+  }
+
+  private invalidateToken(): void {
+    this.authInvalid.set(true);
+    this.connectionState.set(null);
   }
 
   async disconnect(): Promise<void> {

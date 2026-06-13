@@ -58,6 +58,15 @@
     </div>
   </header>
 
+  @if (komootAuth.authInvalid()) {
+    <section class="sync-summary" role="alert">
+      <div>
+        <p class="sync-summary-kicker">Komoot connection expired</p>
+        <p id="reconnect-msg">Your Komoot API token is no longer valid. <a class="sync-summary-link" routerLink="/settings">Reconnect in Settings</a>.</p>
+      </div>
+    </section>
+  }
+
   @if (syncSummary(); as summary) {
     <section class="sync-summary" aria-labelledby="sync-summary-title" role="status">
       <div>

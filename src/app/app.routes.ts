@@ -74,6 +74,18 @@ import { KomootAuthService } from './komoot/komoot-auth.service';
       font-size: 0.8125rem;
       margin: 0;
     }
+    .auth-error.banner {
+      background: #fdf0ee;
+      border: 1px solid #e8c0bb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 0 0 12px;
+    }
+    .auth-verifying {
+      color: #63746a;
+      font-size: 0.8125rem;
+      margin: 0 0 12px;
+    }
   `],
   template: `
     <section class="route-page" aria-labelledby="settings-title">
@@ -84,10 +96,16 @@ import { KomootAuthService } from './komoot/komoot-auth.service';
         <article class="empty-state settings-card" aria-labelledby="komoot-auth-title">
           <p class="empty-state-kicker">Komoot</p>
           <h2 id="komoot-auth-title">Connect Komoot account</h2>
+          @if (komootAuth.authInvalid()) {
+            <p class="auth-error banner" role="alert">Your Komoot connection has expired. Please reconnect.</p>
+          }
+          @if (komootAuth.isVerifying()) {
+            <p class="auth-verifying">Verifying connection…</p>
+          }
           @if (komootAuth.connectionState(); as state) {
             <p class="auth-connected">Connected as <strong>{{ state.displayName }}</strong></p>
             <button class="danger-action" type="button" (click)="disconnectKomoot()">Disconnect</button>
-          } @else {
+          } @else if (!komootAuth.isVerifying()) {
             <p>Enter your Komoot email and password to obtain an API token. Your password is never stored.</p>
             <div class="auth-form">
               <label class="auth-field">
