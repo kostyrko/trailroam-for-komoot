@@ -126,7 +126,7 @@ export class KomootAuthService {
     }
   }
 
-  private invalidateToken(): void {
+  invalidateToken(): void {
     this.authInvalid.set(true);
     this.connectionState.set(null);
   }
