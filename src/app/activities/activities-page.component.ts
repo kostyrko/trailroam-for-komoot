@@ -20,13 +20,12 @@ import { ToastService } from '../shared/toast.service';
 import { DataRefreshService } from '../shared/data-refresh.service';
 import { ConfirmService } from '../shared/confirm.service';
 import { GpxExportService } from '../shared/gpx-export.service';
-import { StravaSessionService } from '../strava/strava-session.service';
-import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
+// TODO: import Komoot services once implemented
 import { LoadingSpinnerComponent } from '../shared/loading-spinner.component';
 import { RouteSparklineComponent } from './route-sparkline.component';
 import { ActivityDetailPanelComponent } from './activity-detail-panel.component';
 import { type ActivityCategory, type ActivityRecord, type ActivityRouteRecord } from '../storage/storage.models';
-import { formatSportType, formatCategory, mapSportTypeToCategory } from '../strava/activity-category';
+import { formatSportType, formatCategory, mapSportTypeToCategory } from '../shared/activity-category';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100];
 

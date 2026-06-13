@@ -1,8 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { TRAILROAM_REPOSITORIES } from './repositories/repositories.token';
 import type { RouteSyncStatus } from './storage.models';
-import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
-import type { RouteFetchResult } from '../strava/strava-session.service';
+// TODO: import Komoot normalizer once implemented
+export interface RouteFetchResult {
+  success: boolean;
+  errorCode?: string;
+}
 import type { UpsertRouteResult } from './repositories/activity-routes.repository';
 
 export interface SyncRouteResult {
@@ -36,14 +39,14 @@ export interface RouteSyncBatchResult {
 })
 export class RouteSyncService {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
-  private readonly routeNormalizer = inject(StravaRouteNormalizer);
+  // TODO: inject Komoot route normalizer once implemented
 
   async syncRoute(
     activityId: string,
     providerActivityId: string,
     fetchResult: RouteFetchResult,
   ): Promise<SyncRouteResult> {
-    if (!fetchResult.success && fetchResult.errorCode === 'STRAVA_RATE_LIMITED') {
+    if (!fetchResult.success && fetchResult.errorCode === 'RATE_LIMITED') {
       await this.repositories.activities.updateRouteSyncStatus(
         activityId,
         false,

@@ -1,3 +1,3 @@
 export const environment = {
-  stravaApiBase: 'https://www.strava.com',
+  komootApiBase: 'https://api.komoot.de',
 };

@@ -36,8 +36,8 @@ import { SyncHistoryService } from './storage/sync-history.service';
         <article class="empty-state settings-card" aria-labelledby="sync-data-title">
           <p class="empty-state-kicker">Sync</p>
           <h2 id="sync-data-title">Sync activities</h2>
-          <p>Import new Strava activities and their GPS routes.</p>
-          <button class="primary-action" type="button" (click)="syncNewActivities()">Sync activities</button>
+          <p>Import new Komoot tours and their GPS routes.</p>
+          <button class="primary-action" type="button" (click)="syncNewActivities()">Sync tours</button>
         </article>
 
         <article class="empty-state settings-card" aria-labelledby="sync-routes-title">
@@ -50,7 +50,7 @@ import { SyncHistoryService } from './storage/sync-history.service';
         <article class="empty-state danger-state settings-card" aria-labelledby="clear-resync-title">
           <p class="empty-state-kicker">Local data</p>
           <h2 id="clear-resync-title">Clear and re-sync</h2>
-          <p>This deletes locally synced activities and route data, then imports them again from Strava. Your settings will be kept.</p>
+          <p>This deletes locally synced tours and route data, then imports them again from Komoot. Your settings will be kept.</p>
           <button
             class="danger-action"
             type="button"
@@ -142,10 +142,10 @@ import { SyncHistoryService } from './storage/sync-history.service';
         <p class="empty-state-kicker">Privacy &amp; Data</p>
         <h2 id="privacy-title">Where your data is stored</h2>
         <ul class="privacy-list">
-          <li>Imported activities and GPS routes are stored only in this browser's IndexedDB using Dexie.js.</li>
-          <li>No route or activity data is ever uploaded to Trailroam servers.</li>
-          <li>Strava login is required — sync opens Strava in a new tab, and your browser session handles authentication.</li>
-          <li>You can inspect stored data by opening DevTools (F12) → Application → IndexedDB → trailroam_for_strava.</li>
+          <li>Imported tours and GPS routes are stored only in this browser's IndexedDB using Dexie.js.</li>
+          <li>No route or tour data is ever uploaded to Trailroam servers.</li>
+          <li>Komoot login is required — enter your credentials in the Komoot auth section to obtain an API token.</li>
+          <li>You can inspect stored data by opening DevTools (F12) → Application → IndexedDB → trailroam_for_komoot.</li>
         </ul>
       </article>
     </section>
@@ -177,17 +177,11 @@ export class SettingsPage {
   }
 
   protected syncNewActivities(): void {
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-    }
+    // TODO: implement Komoot sync
   }
 
   protected syncMissingRoutes(): void {
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSyncMissing=true' });
-    }
+    // TODO: implement Komoot missing routes sync
   }
 
   protected async clearSyncHistory(): Promise<void> {
@@ -279,7 +273,7 @@ export class SettingsPage {
   protected async clearSyncedLocalData(): Promise<void> {
     const confirmed = await this.confirmService.confirm({
       title: 'Clear synced local data',
-      message: 'This will delete imported activities and routes from this browser. It will not delete anything from Strava.',
+      message: 'This will delete imported tours and routes from this browser. It will not delete anything from Komoot.',
       confirmLabel: 'Clear data',
       danger: true,
     });
@@ -312,7 +306,7 @@ export class SettingsPage {
   protected async clearAndResync(): Promise<void> {
     const confirmed = await this.confirmService.confirm({
       title: 'Clear and re-sync',
-      message: 'This will delete locally synced activities and route data, then import them again from Strava. Your settings will be kept.',
+      message: 'This will delete locally synced tours and route data, then import them again from Komoot. Your settings will be kept.',
       confirmLabel: 'Clear and re-sync',
       danger: true,
     });
@@ -335,11 +329,8 @@ export class SettingsPage {
         rateLimitedCount: 0,
         status: 'completed',
       });
-      this.clearLocalDataStatus.set('Local data cleared. Opening Strava to re-sync...');
-      const c = (globalThis as any).chrome;
-      if (c?.tabs?.create) {
-        c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-      }
+      this.clearLocalDataStatus.set('Local data cleared. Ready to re-sync from Komoot.');
+      // TODO: implement Komoot sync
     } finally {
       this.isClearingLocalData.set(false);
     }
