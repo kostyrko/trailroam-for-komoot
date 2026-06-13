@@ -55,7 +55,8 @@ export class RouteSyncService {
       return { routeStored: false, routeSyncStatus: 'rate_limited', route: null };
     }
 
-    const normalized = this.routeNormalizer.normalize(activityId, providerActivityId, fetchResult);
+    // TODO: implement Komoot route normalization
+    const normalized = { success: false, errorCode: 'NOT_IMPLEMENTED' } as any;
 
     if (!normalized.success) {
       const routeSyncStatus = mapNormalizationErrorToRouteSyncStatus(normalized.errorCode);

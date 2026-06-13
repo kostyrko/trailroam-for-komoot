@@ -125,7 +125,7 @@ export class App {
     await this.repositories.settings.put(settings);
   }
 
-  private async showSyncResult(result: SyncNewResult): Promise<void> {
+  private async showSyncResult(result: import('./storage/sync-summary.service').SyncNewResult): Promise<void> {
     await this.syncSummaryService.updateFromResult(result);
     const summary = await this.syncSummaryService.getSummary();
     this.syncSummary.set(summary);

@@ -147,7 +147,7 @@ function routeStatusLabel(status: string): string {
             <svg class="local-data-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <div class="local-data-notice__content">
               <strong>All your activity data is stored locally in your browser.</strong>
-              <span>No data is sent to any server. Use Sync with Strava to import new activities.</span>
+              <span>No data is sent to any server. Use Sync with Komoot to import new tours.</span>
             </div>
             <button class="local-data-notice__dismiss" type="button" (click)="dismissLocalNotice()" aria-label="Dismiss local storage notice">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -386,9 +386,9 @@ function routeStatusLabel(status: string): string {
                       @if (openMenuId() === activity.id) {
                         <ul class="activity-dropdown" [style]="menuStyle()" role="menu" (click)="$event.stopPropagation()">
                           <li role="none">
-                            <button class="act-dropdown-item" role="menuitem" (click)="openOnStrava($event, activity)">
+                            <button class="act-dropdown-item" role="menuitem" (click)="openOnKomoot($event, activity)">
                               <svg class="act-dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                              Strava
+                              Komoot
                             </button>
                           </li>
                           <li role="none">
@@ -462,7 +462,7 @@ function routeStatusLabel(status: string): string {
             <p class="empty-state-kicker">No activities yet</p>
             <h2 id="activities-empty-title">Sync activities to start building your local history.</h2>
             <p>
-              TrailRoam will show imported Strava activities here after the first successful sync.
+              TrailRoam will show imported Komoot tours here after the first successful sync.
             </p>
             <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
             <button class="primary-action" type="button" (click)="startSync()">Sync activities</button>
@@ -1418,8 +1418,7 @@ export class ActivitiesPageComponent {
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly dataRefresh = inject(DataRefreshService);
-  private readonly stravaSessionService = inject(StravaSessionService);
-  private readonly routeNormalizer = inject(StravaRouteNormalizer);
+  // TODO: inject Komoot services once implemented
   private readonly gpxExportService = inject(GpxExportService);
   private readonly confirmService = inject(ConfirmService);
   private readonly activatedRoute = inject(ActivatedRoute);
@@ -1744,7 +1743,7 @@ export class ActivitiesPageComponent {
     if (count === 0) { return; }
     const confirmed = await this.confirmService.confirm({
       title: `Delete ${count} selected ${count === 1 ? 'activity' : 'activities'}?`,
-      message: `${count} ${count === 1 ? 'activity has' : 'activities have'} been selected for deletion. This will remove all selected activities and their GPS routes from the local database. Strava data is not affected.`,
+      message: `${count} ${count === 1 ? 'activity has' : 'activities have'} been selected for deletion. This will remove all selected activities and their GPS routes from the local database. Komoot data is not affected.`,
       confirmLabel: `Delete ${count} ${count === 1 ? 'activity' : 'activities'}`,
       danger: true,
     });
@@ -1858,10 +1857,10 @@ export class ActivitiesPageComponent {
     this.openMenuId.set(null);
   }
 
-  protected openOnStrava(event: MouseEvent, activity: ActivityRecord): void {
+  protected openOnKomoot(event: MouseEvent, activity: ActivityRecord): void {
     event.stopPropagation();
     this.openMenuId.set(null);
-    const url = `https://www.strava.com/activities/${activity.providerActivityId}`;
+    const url = `https://www.komoot.de/tour/${activity.providerActivityId}`;
     const c = (globalThis as any).chrome;
     if (c?.tabs?.create) {
       c.tabs.create({ url });
@@ -1894,41 +1893,12 @@ export class ActivitiesPageComponent {
   protected async retrySyncRoute(event: MouseEvent, activity: ActivityRecord): Promise<void> {
     event.stopPropagation();
     this.openMenuId.set(null);
-    const fetchResult = await this.stravaSessionService.fetchActivityRoute(Number(activity.providerActivityId));
-    if (fetchResult.success) {
-      const normalized = this.routeNormalizer.normalize(activity.id, activity.providerActivityId, fetchResult);
-      if (normalized.success) {
-        const now = new Date().toISOString();
-        await this.repositories.activityRoutes.upsert(normalized.route);
-        await this.repositories.activities.updateRouteSyncStatus(activity.id, true, 'route_synced');
-        this.activities.update((items) =>
-          items?.map((a) => a.id === activity.id ? { ...a, hasRoute: true, routeSyncStatus: 'route_synced' as const, updatedAt: now } : a) ?? null,
-        );
-        this.toastService.show(`Route synced for "${activity.name}".`);
-      } else {
-        const status = normalized.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
-        await this.repositories.activities.updateRouteSyncStatus(activity.id, false, status);
-        this.activities.update((items) =>
-          items?.map((a) => a.id === activity.id ? { ...a, routeSyncStatus: status, updatedAt: new Date().toISOString() } : a) ?? null,
-        );
-        this.toastService.show(`No GPS route available for "${activity.name}".`);
-      }
-    } else {
-      const status = fetchResult.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
-      await this.repositories.activities.updateRouteSyncStatus(activity.id, false, status);
-      this.activities.update((items) =>
-        items?.map((a) => a.id === activity.id ? { ...a, routeSyncStatus: status, updatedAt: new Date().toISOString() } : a) ?? null,
-      );
-      const msg = fetchResult.errorCode === 'STRAVA_LOGIN_REQUIRED' ? 'Log into Strava first to sync routes.' : `No GPS route available for "${activity.name}".`;
-      this.toastService.show(msg);
-    }
+    // TODO: implement Komoot route retry sync
+    this.toastService.show(`Route sync not yet implemented for Komoot.`);
   }
 
   protected startSync(): void {
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-    }
+    // TODO: implement Komoot sync
   }
 
   protected computeSpeed = computeSpeed;
