@@ -21,7 +21,7 @@ import { RouteRendererService } from './route-renderer.service';
 @Component({
   selector: 'app-maplibre-map',
   template: `
-    <div class="map-shell" [class.map-fullscreen]="fullscreen()" aria-label="Activity route map" (document:keydown)="onDocumentKeydown($event)">
+    <div class="map-shell" [class.map-fullscreen]="fullscreen()" [class.map-heatmap-active]="heatmapActive()" aria-label="Activity route map" (document:keydown)="onDocumentKeydown($event)">
       <div #mapContainer class="map-container"></div>
       <button
         class="map-fit-btn"
@@ -35,11 +35,38 @@ import { RouteRendererService } from './route-renderer.service';
           <span class="fit-icon fit-icon-expand">⤢</span>
         }
       </button>
+      @if (heatmapActive()) {
+        <div class="heatmap-legend" aria-label="Heatmap route density legend">
+          <span class="heatmap-legend-label">Few</span>
+          <div class="heatmap-legend-gradient">
+            <span class="heatmap-legend-stop" style="background:rgba(255,59,48,0.08)"></span>
+            <span class="heatmap-legend-stop" style="background:rgba(255,59,48,0.2)"></span>
+            <span class="heatmap-legend-stop" style="background:rgba(255,59,48,0.4)"></span>
+            <span class="heatmap-legend-stop" style="background:rgba(255,59,48,0.6)"></span>
+            <span class="heatmap-legend-stop" style="background:rgba(255,59,48,0.85)"></span>
+          </div>
+          <span class="heatmap-legend-label">Many</span>
+        </div>
+      }
       <div class="map-layer-wrapper">
         <button #layerBtn class="map-layer-btn" type="button" (click)="toggleLayerMenu()" aria-label="Switch map layer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         </button>
-        @if (layerMenuOpen()) {
+        <button
+        class="map-heatmap-btn"
+        type="button"
+        [class.active]="heatmapActive()"
+        (click)="toggleHeatmap()"
+        [attr.aria-label]="heatmapActive() ? 'Show routes' : 'Show heatmap'"
+      >
+        @if (heatmapActive()) {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5 12H2"/><path d="M22 12h-3"/><path d="M7 12h-1"/><path d="M18 12h-1"/><path d="M3 12h1"/></svg>
+        } @else {
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        }
+      </button>
+
+      @if (layerMenuOpen()) {
           <div class="map-layer-menu" (click)="$event.stopPropagation()">
             @for (provider of AVAILABLE_PROVIDERS; track provider.id) {
               <button class="map-layer-menu-item" type="button" [class.active]="provider.id === activeProviderId()" (click)="selectLayer(provider)">
@@ -88,6 +115,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   private readonly mapLibreService = inject(MapLibreService);
   private readonly basemapProviderService = inject(BasemapProviderService);
   private readonly routeRendererService = inject(RouteRendererService);
+  private isHeatmapMode = false;
   private readonly ngZone = inject(NgZone);
   private isDestroyed = false;
   private pendingReadyTasks: (() => void)[] | null = [];
@@ -97,6 +125,7 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   protected readonly AVAILABLE_PROVIDERS = AVAILABLE_PROVIDERS;
   protected readonly activeProviderId = signal(AVAILABLE_PROVIDERS[0].id);
   protected readonly layerMenuOpen = signal(false);
+  protected readonly heatmapActive = signal(false);
 
   protected toggleLayerMenu(): void {
     this.layerMenuOpen.update((v) => !v);
@@ -232,6 +261,12 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     this.pendingReadyTasks = null;
     this.mapInstance = null;
     document.removeEventListener('click', this.closeLayerMenu);
+  }
+
+  protected toggleHeatmap(): void {
+    this.routeRendererService.toggleHeatmap();
+    this.isHeatmapMode = !this.isHeatmapMode;
+    this.heatmapActive.set(this.isHeatmapMode);
   }
 
   protected toggleFullscreen(): void {

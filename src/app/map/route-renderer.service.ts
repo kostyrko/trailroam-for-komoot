@@ -11,9 +11,12 @@ export const CLUSTER_COUNT_LAYER_ID = 'trailroam-route-cluster-count';
 export const UNCLUSTERED_POINT_LAYER_ID = 'trailroam-route-point';
 export const HOVER_POINT_SOURCE_ID = 'trailroam-hover-point';
 export const HOVER_POINT_LAYER_ID = 'trailroam-hover-point-layer';
+export const HEATMAP_SOURCE_ID = 'trailroam-heatmap-lines';
+export const ROUTES_HEATMAP_LAYER_ID = 'trailroam-heatmap';
+
+export const LINE_MIN_ZOOM = 9;
 
 const CLUSTER_MAX_ZOOM = 12;
-const LINE_MIN_ZOOM = 9;
 
 export type RouteSelectedHandler = (route: MapRouteFeature) => void;
 
@@ -186,6 +189,30 @@ export class RouteRendererService {
       },
     });
 
+    const heatmapLineFeatures = routes.map((route) => ({
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: route.coordinates },
+    }));
+
+    map.addSource(HEATMAP_SOURCE_ID, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: heatmapLineFeatures },
+    });
+
+    map.addLayer({
+      id: ROUTES_HEATMAP_LAYER_ID,
+      type: 'line',
+      source: HEATMAP_SOURCE_ID,
+      layout: { visibility: 'none' },
+      paint: {
+        'line-color': '#ff3b30',
+        'line-opacity': 0.071,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 6, 9, 10, 14, 16],
+        'line-blur': ['interpolate', ['linear'], ['zoom'], 5, 4, 9, 3, 14, 2],
+      },
+    });
+
     map.addSource(HOVER_POINT_SOURCE_ID, {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
@@ -248,6 +275,7 @@ export class RouteRendererService {
 
     (map.getSource(ROUTES_SOURCE_ID) as GeoJSONSource)?.setData({ type: 'FeatureCollection', features: lineFeatures });
     (map.getSource(ROUTES_POINTS_SOURCE_ID) as GeoJSONSource)?.setData({ type: 'FeatureCollection', features: centroidFeatures });
+    this.updateHeatmapSource();
   }
 
   selectRoute(activityId: string): void {
@@ -286,6 +314,53 @@ export class RouteRendererService {
       map.once('style.load', fit);
       setTimeout(fit, 500);
     }
+  }
+
+  private isHeatmapMode = false;
+
+  toggleHeatmap(): void {
+    this.isHeatmapMode = !this.isHeatmapMode;
+    const map = this.map;
+    if (!map) { return; }
+    const routeLayers = [
+      `${ROUTES_LAYER_ID}-casing`,
+      ROUTES_LAYER_ID,
+      ROUTES_SELECTED_LAYER_ID,
+      CLUSTER_LAYER_ID,
+      CLUSTER_COUNT_LAYER_ID,
+      UNCLUSTERED_POINT_LAYER_ID,
+      'trailroam-route-single-label',
+    ];
+    const heatmapLayers = [ROUTES_HEATMAP_LAYER_ID];
+    const routeVisible = this.isHeatmapMode ? 'none' : 'visible';
+    const heatmapVisible = this.isHeatmapMode ? 'visible' : 'none';
+    for (const id of routeLayers) {
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'visibility', routeVisible);
+      }
+    }
+    for (const id of heatmapLayers) {
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'visibility', heatmapVisible);
+      }
+    }
+  }
+
+  isHeatmapActive(): boolean {
+    return this.isHeatmapMode;
+  }
+
+  private updateHeatmapSource(): void {
+    const map = this.map;
+    if (!map) { return; }
+    const source = map.getSource(HEATMAP_SOURCE_ID) as GeoJSONSource;
+    if (!source) { return; }
+    const lineFeatures = this.routes.map((route) => ({
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: route.coordinates },
+    }));
+    source.setData({ type: 'FeatureCollection', features: lineFeatures });
   }
 
   private addEventListeners(): void {

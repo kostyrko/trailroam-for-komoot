@@ -174,6 +174,68 @@ p {
   color: #15503b;
 }
 
+.map-shell.map-heatmap-active .map-container {
+  filter: saturate(0.85) contrast(1.1);
+}
+
+.map-heatmap-btn {
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #1f6f50;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgb(20 33 27 / 18%);
+  color: #1f6f50;
+  cursor: pointer;
+  display: flex;
+  height: 30px;
+  justify-content: center;
+  margin-top: 8px;
+  padding: 0;
+  width: 48px;
+}
+
+.map-heatmap-btn:hover,
+.map-heatmap-btn.active {
+  background: #e6f7ef;
+  border-color: #15503b;
+  color: #15503b;
+}
+
+.heatmap-legend {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #cbd8d0;
+  border-radius: 8px;
+  bottom: 44px;
+  box-shadow: 0 2px 8px rgb(20 33 27 / 15%);
+  display: flex;
+  gap: 8px;
+  padding: 7px 11px;
+  position: absolute;
+  right: 14px;
+  z-index: 10;
+}
+
+.heatmap-legend-label {
+  color: #63746a;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heatmap-legend-gradient {
+  border-radius: 3px;
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  width: 60px;
+}
+
+.heatmap-legend-stop {
+  flex: 1;
+}
+
 .map-layer-label {
   background: #ffffff;
   border: 1px solid #dce6df;
