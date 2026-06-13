@@ -81,7 +81,7 @@ import { RouteRendererService } from './route-renderer.service';
           <label class="map-opacity-slider-label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </label>
-          <input class="map-opacity-slider" type="range" min="0" max="100" value="100" (input)="onOpacityChange($any($event.target).value)" aria-label="Adjust layer opacity" />
+          <input #opacitySlider class="map-opacity-slider" type="range" min="0" max="100" [value]="opacitySliderValue" (input)="onOpacityChange($any($event.target).value)" aria-label="Adjust layer opacity" />
         </div>
       </div>
       </div>
@@ -113,6 +113,9 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('layerBtn', { static: true })
   private readonly layerBtn!: ElementRef<HTMLElement>;
 
+  @ViewChild('opacitySlider', { static: true })
+  private readonly opacitySlider!: ElementRef<HTMLInputElement>;
+
   private readonly mapLibreService = inject(MapLibreService);
   private readonly basemapProviderService = inject(BasemapProviderService);
   private readonly routeRendererService = inject(RouteRendererService);
@@ -127,6 +130,8 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
   protected readonly activeProviderId = signal(AVAILABLE_PROVIDERS[0].id);
   protected readonly layerMenuOpen = signal(false);
   protected readonly heatmapActive = signal(false);
+  private readonly heatmapOpacity = signal(100);
+  protected readonly opacitySliderValue = signal(100);
 
   protected toggleLayerMenu(): void {
     this.layerMenuOpen.update((v) => !v);
@@ -268,11 +273,28 @@ export class MapLibreMapComponent implements AfterViewInit, OnDestroy {
     this.routeRendererService.toggleHeatmap();
     this.isHeatmapMode = !this.isHeatmapMode;
     this.heatmapActive.set(this.isHeatmapMode);
+    if (this.isHeatmapMode) {
+      const el = this.opacitySlider?.nativeElement;
+      if (el) {
+        el.value = '33';
+        this.opacitySliderValue.set(33);
+        this.routeRendererService.setLayerOpacity(0.33);
+      }
+    } else {
+      const val = this.heatmapOpacity();
+      const el = this.opacitySlider?.nativeElement;
+      if (el) {
+        el.value = String(val);
+        this.opacitySliderValue.set(val);
+        this.routeRendererService.setLayerOpacity(val / 100);
+      }
+    }
   }
 
   protected onOpacityChange(value: string): void {
     const numeric = parseInt(value, 10) / 100;
     this.routeRendererService.setLayerOpacity(numeric);
+    this.heatmapOpacity.set(parseInt(value, 10));
   }
 
   protected toggleFullscreen(): void {

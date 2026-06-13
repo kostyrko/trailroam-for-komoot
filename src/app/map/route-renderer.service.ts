@@ -62,6 +62,7 @@ export class RouteRendererService {
     if (existingSource) {
       (existingSource as GeoJSONSource).setData({ type: 'FeatureCollection', features: lineFeatures });
       (map.getSource(ROUTES_POINTS_SOURCE_ID) as GeoJSONSource).setData({ type: 'FeatureCollection', features: centroidFeatures });
+      this.updateHeatmapSource();
       return;
     }
 
