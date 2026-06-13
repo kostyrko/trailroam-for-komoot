@@ -317,6 +317,44 @@ export class RouteRendererService {
   }
 
   private isHeatmapMode = false;
+  private opacityOverride: number | null = null;
+
+  private readonly opacityTargets = [
+    `${ROUTES_LAYER_ID}-casing`,
+    ROUTES_LAYER_ID,
+    ROUTES_SELECTED_LAYER_ID,
+    ROUTES_HEATMAP_LAYER_ID,
+  ];
+
+  setLayerOpacity(value: number): void {
+    this.opacityOverride = value;
+    const map = this.map;
+    if (!map) { return; }
+    for (const id of this.opacityTargets) {
+      const layer = map.getLayer(id);
+      if (layer && layer.type === 'line') {
+        map.setPaintProperty(id, 'line-opacity', value);
+      }
+    }
+  }
+
+  resetLayerOpacity(): void {
+    this.opacityOverride = null;
+    const map = this.map;
+    if (!map) { return; }
+    if (map.getLayer(`${ROUTES_LAYER_ID}-casing`)) {
+      map.setPaintProperty(`${ROUTES_LAYER_ID}-casing`, 'line-opacity', 0.9);
+    }
+    if (map.getLayer(ROUTES_LAYER_ID)) {
+      map.setPaintProperty(ROUTES_LAYER_ID, 'line-opacity', 0.85);
+    }
+    if (map.getLayer(ROUTES_SELECTED_LAYER_ID)) {
+      map.setPaintProperty(ROUTES_SELECTED_LAYER_ID, 'line-opacity', 1);
+    }
+    if (map.getLayer(ROUTES_HEATMAP_LAYER_ID)) {
+      map.setPaintProperty(ROUTES_HEATMAP_LAYER_ID, 'line-opacity', 0.071);
+    }
+  }
 
   toggleHeatmap(): void {
     this.isHeatmapMode = !this.isHeatmapMode;
