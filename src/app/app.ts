@@ -9,6 +9,7 @@ import { LocalDataService } from './storage/local-data.service';
 import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.token';
 import { DataRefreshService } from './shared/data-refresh.service';
 import { KomootAuthService } from './komoot/komoot-auth.service';
+import { KomootSyncService } from './komoot/komoot-sync.service';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +22,7 @@ export class App {
   private readonly localDataService = inject(LocalDataService);
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
   protected readonly komootAuth = inject(KomootAuthService);
+  protected readonly komootSync = inject(KomootSyncService);
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
   private readonly dataRefresh = inject(DataRefreshService);
@@ -135,7 +137,10 @@ export class App {
 
   protected syncNewActivities(): void {
     this.closeSyncMenu();
-    // TODO: implement Komoot sync
+    this.komootSync.syncNewTours().then(() => {
+      this.loadSyncSummary();
+      this.loadLastSyncLabel();
+    });
   }
 
   protected syncMissingRoutes(): void {

@@ -7,6 +7,7 @@ import { ToastService } from './shared/toast.service';
 import { LocalDataService } from './storage/local-data.service';
 import { SyncHistoryService } from './storage/sync-history.service';
 import { KomootAuthService } from './komoot/komoot-auth.service';
+import { KomootSyncService } from './komoot/komoot-sync.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -250,6 +251,7 @@ export class SettingsPage {
   private readonly toastService = inject(ToastService);
   private readonly syncHistoryService = inject(SyncHistoryService);
   protected readonly komootAuth = inject(KomootAuthService);
+  private readonly komootSync = inject(KomootSyncService);
 
   protected readonly isClearingLocalData = signal(false);
   protected readonly clearLocalDataStatus = signal<string | null>(null);
@@ -295,7 +297,7 @@ export class SettingsPage {
   }
 
   protected syncNewActivities(): void {
-    // TODO: implement Komoot sync
+    this.komootSync.syncNewTours().then(() => this.loadSyncHistory());
   }
 
   protected syncMissingRoutes(): void {

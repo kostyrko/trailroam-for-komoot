@@ -39,24 +39,24 @@ export class KomootAuthService {
   }
 
   async verifyToken(): Promise<boolean> {
-    const creds = this.getCredentials();
-    if (!creds) { return false; }
     this.isVerifying.set(true);
     try {
+      const state = this.connectionState();
+      if (!state?.userId || !state?.token) { return false; }
       const response = await fetch(
-        `https://api.komoot.de/v007/users/${creds.userId}/tours/?page=0`,
+        `https://api.komoot.de/v007/users/${state.userId}/tours/?page=0`,
         {
           headers: {
-            Authorization: `Basic ${btoa(`${creds.userId}:${creds.token}`)}`,
+            Authorization: `Basic ${btoa(`${state.userId}:${state.token}`)}`,
           },
         },
       );
       if (response.ok) {
         this.connectionState.set({
           connected: true,
-          userId: creds.userId,
-          token: creds.token,
-          displayName: this.connectionState()?.displayName ?? '',
+          userId: state.userId,
+          token: state.token,
+          displayName: state.displayName,
         });
         return true;
       }
@@ -64,9 +64,9 @@ export class KomootAuthService {
         this.invalidateToken();
         return false;
       }
-      return this.connectionState()?.connected ?? false;
+      return false;
     } catch {
-      return this.connectionState()?.connected ?? false;
+      return false;
     } finally {
       this.isVerifying.set(false);
     }
@@ -146,7 +146,7 @@ export class KomootAuthService {
 
   getCredentials(): { userId: string; token: string } | null {
     const state = this.connectionState();
-    if (!state?.connected) return null;
+    if (!state?.userId || !state?.token) return null;
     return { userId: state.userId, token: state.token };
   }
 }
