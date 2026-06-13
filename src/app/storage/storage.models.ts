@@ -100,6 +100,10 @@ export interface SettingsRecord {
   preferredDefaultRoute?: 'map' | 'activities';
   dismissedSyncAt?: string;
   dismissedLocalDataNoticeAt?: string;
+  komootUserId?: string;
+  komootToken?: string;
+  komootDisplayName?: string;
+  komootLastVerifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

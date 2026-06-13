@@ -6,6 +6,7 @@ import { ConfirmService } from './shared/confirm.service';
 import { ToastService } from './shared/toast.service';
 import { LocalDataService } from './storage/local-data.service';
 import { SyncHistoryService } from './storage/sync-history.service';
+import { KomootAuthService } from './komoot/komoot-auth.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -26,6 +27,53 @@ import { SyncHistoryService } from './storage/sync-history.service';
     .settings-card {
       margin: 0;
     }
+
+    .auth-connected {
+      margin: 0 0 12px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .auth-label {
+      color: #63746a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .auth-input {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      color: #14211b;
+      font: inherit;
+      font-size: 0.875rem;
+      min-height: 44px;
+      padding: 0 12px;
+    }
+
+    .auth-input:focus {
+      border-color: #1f6f50;
+      box-shadow: 0 0 0 2px rgb(31 111 80 / 15%);
+      outline: none;
+    }
+
+    .auth-error {
+      color: #b8433a;
+      font-size: 0.8125rem;
+      margin: 0;
+    }
   `],
   template: `
     <section class="route-page" aria-labelledby="settings-title">
@@ -33,11 +81,38 @@ import { SyncHistoryService } from './storage/sync-history.service';
       <p>Manage local extension data stored in this browser.</p>
 
       <div class="settings-cards">
+        <article class="empty-state settings-card" aria-labelledby="komoot-auth-title">
+          <p class="empty-state-kicker">Komoot</p>
+          <h2 id="komoot-auth-title">Connect Komoot account</h2>
+          @if (komootAuth.connectionState(); as state) {
+            <p class="auth-connected">Connected as <strong>{{ state.displayName }}</strong></p>
+            <button class="danger-action" type="button" (click)="disconnectKomoot()">Disconnect</button>
+          } @else {
+            <p>Enter your Komoot email and password to obtain an API token. Your password is never stored.</p>
+            <div class="auth-form">
+              <label class="auth-field">
+                <span class="auth-label">Email</span>
+                <input class="auth-input" type="email" [value]="komootEmail()" (input)="komootEmail.set($any($event.target).value)" placeholder="your@email.com" autocomplete="email" />
+              </label>
+              <label class="auth-field">
+                <span class="auth-label">Password</span>
+                <input class="auth-input" type="password" [value]="komootPassword()" (input)="komootPassword.set($any($event.target).value)" placeholder="Komoot password" autocomplete="current-password" />
+              </label>
+              @if (komootAuth.connectionError(); as error) {
+                <p class="auth-error" role="alert">{{ error }}</p>
+              }
+              <button class="primary-action" type="button" [disabled]="!komootEmail() || !komootPassword() || komootAuth.isConnecting()" (click)="connectKomoot()">
+                {{ komootAuth.isConnecting() ? 'Connecting...' : 'Connect' }}
+              </button>
+            </div>
+          }
+        </article>
+
         <article class="empty-state settings-card" aria-labelledby="sync-data-title">
           <p class="empty-state-kicker">Sync</p>
-          <h2 id="sync-data-title">Sync activities</h2>
+          <h2 id="sync-data-title">Sync tours</h2>
           <p>Import new Komoot tours and their GPS routes.</p>
-          <button class="primary-action" type="button" (click)="syncNewActivities()">Sync tours</button>
+          <button class="primary-action" type="button" [disabled]="!komootAuth.connectionState()" (click)="syncNewActivities()">Sync tours</button>
         </article>
 
         <article class="empty-state settings-card" aria-labelledby="sync-routes-title">
@@ -156,13 +231,38 @@ export class SettingsPage {
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
   private readonly syncHistoryService = inject(SyncHistoryService);
+  protected readonly komootAuth = inject(KomootAuthService);
 
   protected readonly isClearingLocalData = signal(false);
   protected readonly clearLocalDataStatus = signal<string | null>(null);
   protected readonly syncHistory = signal<import('./storage/storage.models').SyncHistoryRecord[]>([]);
+  protected readonly komootEmail = signal('');
+  protected readonly komootPassword = signal('');
 
   constructor() {
     this.loadSyncHistory();
+    this.komootAuth.loadAuthState();
+  }
+
+  protected async connectKomoot(): Promise<void> {
+    await this.komootAuth.connect(this.komootEmail(), this.komootPassword());
+    if (this.komootAuth.connectionState()) {
+      this.komootEmail.set('');
+      this.komootPassword.set('');
+      this.toastService.show('Connected to Komoot as ' + this.komootAuth.connectionState()!.displayName);
+    }
+  }
+
+  protected async disconnectKomoot(): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Disconnect Komoot',
+      message: 'This will remove your Komoot API token. You will need to reconnect to sync tours.',
+      confirmLabel: 'Disconnect',
+      danger: true,
+    });
+    if (!confirmed) return;
+    await this.komootAuth.disconnect();
+    this.toastService.show('Disconnected from Komoot.');
   }
 
   private async loadSyncHistory(): Promise<void> {
