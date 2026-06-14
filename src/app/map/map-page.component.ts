@@ -19,7 +19,7 @@ import { FiltersService, CATEGORY_COLORS, isAfterOrEqual, isBeforeOrEqual, type 
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { RouteRendererService } from './route-renderer.service';
 import { type ActivityCategory } from '../storage/storage.models';
-import { formatSportType, formatCategory, mapSportTypeToCategory } from '../shared/activity-category';
+import { formatSportType, formatCategory, mapSportTypeToCategory } from '../strava/activity-category';
 import { ToastService } from '../shared/toast.service';
 import { DataRefreshService } from '../shared/data-refresh.service';
 import { GpxExportService } from '../shared/gpx-export.service';
@@ -201,10 +201,10 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
               <p class="empty-state-kicker">No routes yet</p>
               <h2 id="map-empty-title">Synced GPS routes will appear here.</h2>
               <p>
-                Start a sync to import Komoot tours and show available route lines on this map.
+                Start a sync to import Strava activities and show available route lines on this map.
               </p>
               <p class="privacy-note">Your data stays private — everything is stored locally in your browser.</p>
-              <button class="primary-action" type="button" (click)="syncActivities()">Sync tours</button>
+              <button class="primary-action" type="button" (click)="syncActivities()">Sync activities</button>
             </article>
           </div>
         }
@@ -262,11 +262,11 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
                 <dd class="stat-value">{{ formatDuration(route.activity.movingTimeSeconds) }}</dd>
               </div>
               <div class="stat">
-                <dt class="stat-label">Komoot</dt>
+                <dt class="stat-label">Strava</dt>
                 <dd class="stat-value">
-                  <button class="komoot-link" type="button" (click)="openOnKomoot($event, route.activity)">
+                  <button class="strava-link" type="button" (click)="openOnStrava($event, route.activity)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    Open in Komoot
+                    Open in Strava
                   </button>
                 </dd>
               </div>
@@ -496,7 +496,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       padding: 0;
     }
 
-    .komoot-link {
+    .strava-link {
       align-items: center;
       background: transparent;
       border: 0;
@@ -510,7 +510,7 @@ const POINTS_WARN_THRESHOLD = 1_000_000;
       padding: 0;
     }
 
-    .komoot-link:hover {
+    .strava-link:hover {
       color: #185940;
       text-decoration: underline;
     }
@@ -1196,8 +1196,7 @@ export class MapPage implements AfterViewInit {
   protected syncActivities(): void {
     const c = (globalThis as any).chrome;
     if (c?.tabs?.create) {
-      // TODO: implement Komoot sync
-      console.log('Sync from map page not yet implemented for Komoot');
+      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
     }
   }
 
@@ -1220,9 +1219,9 @@ export class MapPage implements AfterViewInit {
     this.router.navigate(['/activities'], { queryParams: { focusActivityId: activity.id } });
   }
 
-  protected openOnKomoot(event: MouseEvent, activity: import('../storage/storage.models').ActivityRecord): void {
+  protected openOnStrava(event: MouseEvent, activity: import('../storage/storage.models').ActivityRecord): void {
     event.stopPropagation();
-    const url = `https://www.komoot.de/tour/${activity.providerActivityId}`;
+    const url = `https://www.strava.com/activities/${activity.providerActivityId}`;
     const c = (globalThis as any).chrome;
     if (c?.tabs?.create) {
       c.tabs.create({ url });

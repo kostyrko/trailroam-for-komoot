@@ -22,11 +22,9 @@ export type RouteSyncStatus =
   | 'skipped'
   | 'rate_limited';
 
-export type ActivityProvider = 'strava' | 'komoot';
-
 export interface ActivityRecord {
   id: string;
-  provider: ActivityProvider;
+  provider: 'strava';
   providerActivityId: string;
   name: string;
   sportType: string;
@@ -102,10 +100,6 @@ export interface SettingsRecord {
   preferredDefaultRoute?: 'map' | 'activities';
   dismissedSyncAt?: string;
   dismissedLocalDataNoticeAt?: string;
-  komootUserId?: string;
-  komootToken?: string;
-  komootDisplayName?: string;
-  komootLastVerifiedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

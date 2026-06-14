@@ -1,11 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { TRAILROAM_REPOSITORIES } from './repositories/repositories.token';
 import type { RouteSyncStatus } from './storage.models';
-// TODO: import Komoot normalizer once implemented
-export interface RouteFetchResult {
-  success: boolean;
-  errorCode?: string;
-}
+import { StravaRouteNormalizer } from '../strava/strava-route-normalizer';
+import type { RouteFetchResult } from '../strava/strava-session.service';
 import type { UpsertRouteResult } from './repositories/activity-routes.repository';
 
 export interface SyncRouteResult {
@@ -39,14 +36,14 @@ export interface RouteSyncBatchResult {
 })
 export class RouteSyncService {
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
-  // TODO: inject Komoot route normalizer once implemented
+  private readonly routeNormalizer = inject(StravaRouteNormalizer);
 
   async syncRoute(
     activityId: string,
     providerActivityId: string,
     fetchResult: RouteFetchResult,
   ): Promise<SyncRouteResult> {
-    if (!fetchResult.success && fetchResult.errorCode === 'RATE_LIMITED') {
+    if (!fetchResult.success && fetchResult.errorCode === 'STRAVA_RATE_LIMITED') {
       await this.repositories.activities.updateRouteSyncStatus(
         activityId,
         false,
@@ -55,8 +52,7 @@ export class RouteSyncService {
       return { routeStored: false, routeSyncStatus: 'rate_limited', route: null };
     }
 
-    // TODO: implement Komoot route normalization
-    const normalized = { success: false, errorCode: 'NOT_IMPLEMENTED' } as any;
+    const normalized = this.routeNormalizer.normalize(activityId, providerActivityId, fetchResult);
 
     if (!normalized.success) {
       const routeSyncStatus = mapNormalizationErrorToRouteSyncStatus(normalized.errorCode);

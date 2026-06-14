@@ -4,7 +4,7 @@
       <a class="app-header__brand-link" routerLink="/map">
         <img class="app-header__logo" src="assets/trailroam-logo.svg" alt="" width="32" height="32" />
         <div class="app-header__brand-copy">
-          <div class="app-header__title">TrailRoam for Komoot</div>
+          <div class="app-header__title">TrailRoam for Strava</div>
           <div class="app-header__subtitle">Chrome extension</div>
         </div>
       </a>
@@ -32,11 +32,7 @@
           (click)="toggleSyncMenu(); $event.stopPropagation()"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          @if (komootSync.isSyncing()) {
-            <span class="sync-btn sync-btn--syncing">Syncing…</span>
-          } @else {
-            Sync Komoot
-          }
+          Sync Strava
         </button>
 
         @if (syncMenuOpen()) {
@@ -47,33 +43,20 @@
               }
             </li>
             <li role="none">
-              <button class="dropdown-item" role="menuitem" [disabled]="komootSync.isSyncing()" (click)="syncNewActivities()">
-                Sync tours
+              <button class="dropdown-item" role="menuitem" (click)="syncNewActivities()">
+                Sync activities
               </button>
             </li>
             <li role="none">
-              <button class="dropdown-item" role="menuitem" [disabled]="komootSync.isSyncing()" (click)="syncMissingRoutes()">
+              <button class="dropdown-item" role="menuitem" (click)="syncMissingRoutes()">
                 Sync missing routes
               </button>
             </li>
           </ul>
         }
-
-        @if (komootSync.syncProgress(); as progress) {
-          <span class="sync-progress">{{ progress }}</span>
-        }
       </div>
     </div>
   </header>
-
-  @if (komootAuth.authInvalid()) {
-    <section class="sync-summary" role="alert">
-      <div>
-        <p class="sync-summary-kicker">Komoot connection expired</p>
-        <p id="reconnect-msg">Your Komoot API token is no longer valid. <a class="sync-summary-link" routerLink="/settings">Reconnect in Settings</a>.</p>
-      </div>
-    </section>
-  }
 
   @if (syncSummary(); as summary) {
     <section class="sync-summary" aria-labelledby="sync-summary-title" role="status">

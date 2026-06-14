@@ -11,7 +11,7 @@ import { ConfirmService } from '../shared/confirm.service';
 import { DataRefreshService } from '../shared/data-refresh.service';
 import { TRAILROAM_REPOSITORIES } from '../storage/repositories/repositories.token';
 import { type ActivityRecord, type ActivityRouteRecord } from '../storage/storage.models';
-import { formatSportType } from '../shared/activity-category';
+import { formatSportType } from '../strava/activity-category';
 
 function formatDistance(meters: number | undefined): string {
   if (meters === undefined || meters === 0) { return '—'; }
@@ -137,9 +137,9 @@ const SPEED_COLORS = [
                   @if (menuOpen()) {
                     <ul class="panel-menu-dropdown" role="menu" (click)="$event.stopPropagation()">
                       <li role="none">
-                        <button class="panel-menu-item" role="menuitem" (click)="openOnKomoot($event)">
+                        <button class="panel-menu-item" role="menuitem" (click)="openInStrava($event)">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                          Komoot
+                          Strava
                         </button>
                       </li>
                       <li role="none">
@@ -950,16 +950,16 @@ export class ActivityDetailPanelComponent {
     this.menuOpen.update((v) => !v);
   }
 
-  protected openOnKomoot(event: MouseEvent): void {
+  protected openInStrava(event: MouseEvent): void {
     event.stopPropagation();
     this.menuOpen.set(false);
     const a = this.activity();
     if (!a || !a.providerActivityId) { return; }
     const c = (globalThis as any).chrome;
     if (c?.tabs?.create) {
-      c.tabs.create({ url: `https://www.komoot.de/tour/${a.providerActivityId}` });
+      c.tabs.create({ url: `https://www.strava.com/activities/${a.providerActivityId}` });
     } else {
-      window.open(`https://www.komoot.de/tour/${a.providerActivityId}`, '_blank');
+      window.open(`https://www.strava.com/activities/${a.providerActivityId}`, '_blank');
     }
   }
 

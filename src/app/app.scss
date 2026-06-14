@@ -196,18 +196,6 @@
   margin: 0 0 2px;
 }
 
-.sync-btn--syncing {
-  opacity: 0.7;
-}
-
-.sync-progress {
-  color: #63746a;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: 8px;
-  white-space: nowrap;
-}
-
 .sync-summary p {
   margin: 0;
 }
@@ -233,12 +221,6 @@
 
 .sync-summary-dismiss:hover {
   background: #d0efe0;
-}
-
-.sync-summary-link {
-  color: inherit;
-  font-weight: 700;
-  text-decoration: underline;
 }
 
 .sync-dropdown {

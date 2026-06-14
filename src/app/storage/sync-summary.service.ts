@@ -1,14 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { TRAILROAM_REPOSITORIES } from './repositories/repositories.token';
-export interface SyncNewResult {
-  importedCount: number;
-  updatedCount: number;
-  routesSyncedCount: number;
-  skippedCount: number;
-  failedCount: number;
-  rateLimitedCount: number;
-  errorMessage?: string;
-}
+import type { SyncNewResult } from '../sync/sync-engine.service';
 
 export interface SyncSummary {
   importedCount: number;

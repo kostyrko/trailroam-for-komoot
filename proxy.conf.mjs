@@ -1,11 +1,15 @@
 export default [
   {
     context: ['/api'],
-    target: 'https://api.komoot.de',
+    target: 'https://www.strava.com',
     changeOrigin: true,
     secure: true,
+    cookieDomainRewrite: 'localhost',
     headers: {
-      'Origin': 'https://api.komoot.de',
+      'Origin': 'https://www.strava.com',
+    },
+    onProxyReq: (proxyReq) => {
+      proxyReq.setHeader('Origin', 'https://www.strava.com');
     },
   },
 ];

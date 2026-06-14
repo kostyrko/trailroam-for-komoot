@@ -9,7 +9,7 @@ import {
   type SyncStateRecord,
 } from './storage.models';
 
-export const DATABASE_NAME = 'trailroam_for_komoot';
+export const DATABASE_NAME = 'trailroam_for_strava';
 
 export class TrailroamDatabase extends Dexie {
   activities!: Table<ActivityRecord, string>;
