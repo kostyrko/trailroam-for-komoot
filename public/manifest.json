@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "TrailRoam for Strava",
+  "description": "Import Strava activities locally and view routes in a full-page extension app.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "app/assets/trailroam-logo-16.png",
+    "32": "app/assets/trailroam-logo-32.png",
+    "48": "app/assets/trailroam-logo-48.png",
+    "128": "app/assets/trailroam-logo-128.png",
+    "256": "app/assets/trailroam-logo-256.png"
+  },
+  "action": {
+    "default_title": "Trailroam for Strava",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "app/assets/trailroam-logo-16.png",
+      "32": "app/assets/trailroam-logo-32.png",
+      "48": "app/assets/trailroam-logo-48.png",
+      "128": "app/assets/trailroam-logo-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.strava.com/*", "https://strava.com/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.strava.com/*",
+    "https://strava.com/*",
+    "https://tiles.openfreemap.org/*"
+  ]
+}

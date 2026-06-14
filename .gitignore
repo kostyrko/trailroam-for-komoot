@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+extension-build/
+out-tsc/
+bazel-out/
+coverage/
+.angular/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+
+# Chrome extension local artifacts
+*.crx
+artifacts/
+
+# IDEs and editors
+.idea/
+.vscode/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.history/*
+
+# Miscellaneous
+.sass-cache/
+.cache/
+.nyc_output/
+.playwright-mcp/
+playwright-report/
+test-results/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# System files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,107 @@
+<main class="app-shell">
+  <header class="app-header">
+    <div class="app-header__brand">
+      <a class="app-header__brand-link" routerLink="/map">
+        <img class="app-header__logo" src="assets/trailroam-logo.svg" alt="" width="32" height="32" />
+        <div class="app-header__brand-copy">
+          <div class="app-header__title">TrailRoam for Strava</div>
+          <div class="app-header__subtitle">Chrome extension</div>
+        </div>
+      </a>
+    </div>
+
+    <nav class="main-nav-switcher" aria-label="Primary navigation">
+      <a class="main-nav-item" routerLink="/activities" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Activities</a>
+      <a class="main-nav-item" routerLink="/map" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Map Explorer</a>
+      <a class="main-nav-item" routerLink="/settings" routerLinkActive="main-nav-item--active" ariaCurrentWhenActive="page">Settings</a>
+    </nav>
+
+    <div class="app-header__actions">
+      <button class="refresh-btn" type="button" (click)="refreshExtension()" title="Reload app" aria-label="Reload app">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        <span class="refresh-btn__label-full">Refresh view</span>
+        <span class="refresh-btn__label-short">Refresh</span>
+      </button>
+
+      <div class="sync-menu-wrapper">
+        <button
+          class="sync-btn"
+          type="button"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="syncMenuOpen()"
+          (click)="toggleSyncMenu(); $event.stopPropagation()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Sync Strava
+        </button>
+
+        @if (syncMenuOpen()) {
+          <ul class="sync-dropdown" role="menu" aria-label="Sync actions" (click)="$event.stopPropagation()">
+            <li class="sync-dropdown__lastsynced" role="none">
+              @if (lastSyncLabel(); as label) {
+                <span class="sync-dropdown__label">Last synced: {{ label }}</span>
+              }
+            </li>
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="syncNewActivities()">
+                Sync activities
+              </button>
+            </li>
+            <li role="none">
+              <button class="dropdown-item" role="menuitem" (click)="syncMissingRoutes()">
+                Sync missing routes
+              </button>
+            </li>
+          </ul>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (syncSummary(); as summary) {
+    <section class="sync-summary" aria-labelledby="sync-summary-title" role="status">
+      <div>
+        <p class="sync-summary-kicker">Sync completed</p>
+        <p id="sync-summary-title">
+          {{ summary.totalActivities }} activities:
+          {{ summary.activitiesWithRoutes }} with routes,
+          {{ summary.activitiesWithoutRoutes }} without GPS
+        </p>
+        @if (summary.importedCount || summary.updatedCount || summary.skippedCount || summary.failedCount || summary.rateLimitedCount || summary.lastErrorMessage) {
+          <p class="sync-summary-detail">
+            @if (summary.importedCount) {
+              Imported: {{ summary.importedCount }}
+            }
+            @if (summary.updatedCount) {
+              · Updated: {{ summary.updatedCount }}
+            }
+            @if (summary.skippedCount) {
+              · Skipped: {{ summary.skippedCount }}
+            }
+            @if (summary.rateLimitedCount) {
+              · Rate limited: {{ summary.rateLimitedCount }}
+            }
+            @if (summary.failedCount) {
+              · Failed: {{ summary.failedCount }}
+            }
+            @if (summary.lastErrorMessage) {
+              · Error: {{ summary.lastErrorMessage }}
+            }
+          </p>
+        }
+      </div>
+      <button class="sync-summary-dismiss" type="button" (click)="dismissSyncSummary()" aria-label="Dismiss sync summary">
+        Dismiss
+      </button>
+    </section>
+  }
+
+  <section class="app-content" aria-label="TrailRoam workspace">
+    <router-outlet />
+  </section>
+
+  <footer class="app-footer">
+    <span class="build-version">build {{ buildDate }}</span>
+  </footer>
+</main>
+<app-toast />
