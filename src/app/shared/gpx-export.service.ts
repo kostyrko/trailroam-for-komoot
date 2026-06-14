@@ -15,7 +15,7 @@ function slugify(text: string): string {
 function buildGpx(activity: ActivityRecord, route: ActivityRouteRecord): string {
   const lines: string[] = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<gpx version="1.1" creator="Trailroam for Strava"',
+    '<gpx version="1.1" creator="Trailroam for Komoot"',
     '  xmlns="http://www.topografix.com/GPX/1/1">',
     '  <trk>',
     `    <name>${escapeXml(activity.name)}</name>`,
