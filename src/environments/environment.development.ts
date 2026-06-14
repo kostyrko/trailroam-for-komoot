@@ -1,5 +1,5 @@
 export const environment = {
-  stravaApiBase: '',
-  appName: 'TrailRoam for Strava',
-  appSlug: 'trailroam-for-strava',
+  komootApiBase: '',
+  appName: 'TrailRoam for Komoot',
+  appSlug: 'trailroam-for-komoot',
 };

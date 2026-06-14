@@ -6,256 +6,243 @@ import { ConfirmService } from './shared/confirm.service';
 import { ToastService } from './shared/toast.service';
 import { LocalDataService } from './storage/local-data.service';
 import { SyncHistoryService } from './storage/sync-history.service';
+import { KomootAuthService } from './komoot/komoot-auth.service';
+import { KomootSyncService } from './komoot/komoot-sync.service';
 
 @Component({
   selector: 'app-settings-page',
   styles: [`
-    :host { display: block; background: #f7f8f7; min-height: 100vh; }
-    .settings-page { max-width: 1280px; margin: 0 auto; padding: 32px 24px 48px; }
-    .settings-title { font-size: 32px; font-weight: 700; color: #111827; margin: 0 0 4px; }
-    .settings-subtitle { font-size: 15px; color: #6b7280; margin: 0 0 32px; }
-    .settings-layout { display: flex; gap: 24px; align-items: flex-start; }
-    .settings-main { flex: 1; min-width: 0; }
-    .settings-sidebar { width: 320px; flex-shrink: 0; position: sticky; top: 24px; }
-    .section-title { font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 16px; }
-    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
-    .action-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; min-height: 180px; position: relative; }
-    .action-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .action-card-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #0f766e; text-transform: uppercase; }
-    .action-card-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .action-card-icon-green { background: #e8f5ec; }
-    .action-card-icon-red { background: #fdecec; }
-    .action-card-icon svg { color: #15803d; }
-    .action-card-icon-red svg { color: #dc2626; }
-    .action-card-title { font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 8px; }
-    .action-card-desc { font-size: 14px; color: #6b7280; line-height: 1.5; margin: 0; flex: 1; }
-    .action-card-bottom { margin-top: 16px; }
-    .connected-row { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #15803d; margin-top: 4px; }
-    .connected-dot { width: 8px; height: 8px; border-radius: 50%; background: #15803d; flex-shrink: 0; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; font-weight: 600; height: 36px; padding: 0 16px; cursor: pointer; border: none; font-family: inherit; transition: background 0.15s; }
-    .btn-primary { background: #15803d; color: #ffffff; }
-    .btn-primary:hover { background: #166534; }
-    .btn-danger { background: #ffffff; color: #dc2626; border: 1px solid #dc2626; }
-    .btn-danger:hover { background: #fef2f2; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .history-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
-    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .history-title { font-size: 18px; font-weight: 600; color: #111827; margin: 0; }
-    .privacy-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
-    .privacy-title { font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 2px; }
-    .privacy-subtitle { font-size: 14px; color: #6b7280; margin: 0 0 16px; }
-    .privacy-highlight { background: #eef8f0; border-radius: 8px; padding: 16px; display: flex; gap: 12px; margin-bottom: 16px; }
-    .privacy-highlight-icon { width: 20px; height: 20px; color: #15803d; flex-shrink: 0; margin-top: 1px; }
-    .privacy-highlight-title { font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 2px; }
-    .privacy-highlight-text { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
-    .privacy-row { display: flex; gap: 10px; margin-bottom: 14px; }
-    .privacy-row:last-of-type { margin-bottom: 0; }
-    .privacy-row-icon { width: 18px; height: 18px; color: #9ca3af; flex-shrink: 0; margin-top: 2px; }
-    .privacy-row-text { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 0; }
-    .tip-box { background: #fff8e6; border-radius: 8px; padding: 14px; display: flex; gap: 10px; margin-top: 16px; }
-    .tip-icon { width: 18px; height: 18px; color: #b8860b; flex-shrink: 0; margin-top: 1px; }
-    .tip-title { font-size: 13px; font-weight: 600; color: #92400e; margin: 0 0 2px; }
-    .tip-text { font-size: 13px; color: #92400e; margin: 0; line-height: 1.5; }
-    .sync-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .sync-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
-    .sync-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #374151; }
-    .sync-table tbody tr:hover { background: #f9fafb; }
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-    .status-dot-green { background: #15803d; }
-    .status-dot-amber { background: #d97706; }
-    .status-dot-red { background: #dc2626; }
-    .view-full-btn { display: block; margin: 16px auto 0; background: transparent; border: 1px solid #e5e7eb; border-radius: 8px; color: #374151; font-size: 14px; font-weight: 500; height: 36px; padding: 0 16px; cursor: pointer; font-family: inherit; }
-    .view-full-btn:hover { background: #f9fafb; }
-    .no-history { font-size: 14px; color: #9ca3af; margin: 0; }
-    .clear-status { font-size: 14px; color: #15803d; margin-top: 12px; }
-    @media (max-width: 911px) {
-      .settings-layout { flex-direction: column; }
-      .settings-sidebar { width: 100%; position: static; }
-      .action-grid { grid-template-columns: 1fr; }
+    .settings-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    @media (min-width: 800px) {
+      .settings-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .settings-card {
+      margin: 0;
+    }
+
+    .auth-connected {
+      margin: 0 0 12px;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .auth-label {
+      color: #63746a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .auth-input {
+      background: #ffffff;
+      border: 1px solid #dce6df;
+      border-radius: 8px;
+      color: #14211b;
+      font: inherit;
+      font-size: 0.875rem;
+      min-height: 44px;
+      padding: 0 12px;
+    }
+
+    .auth-input:focus {
+      border-color: #1f6f50;
+      box-shadow: 0 0 0 2px rgb(31 111 80 / 15%);
+      outline: none;
+    }
+
+    .auth-error {
+      color: #b8433a;
+      font-size: 0.8125rem;
+      margin: 0;
+    }
+    .auth-error.banner {
+      background: #fdf0ee;
+      border: 1px solid #e8c0bb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 0 0 12px;
+    }
+    .auth-verifying {
+      color: #63746a;
+      font-size: 0.8125rem;
+      margin: 0 0 12px;
     }
   `],
   template: `
-    <div class="settings-page">
-      <h1 class="settings-title">Settings</h1>
-      <p class="settings-subtitle">Manage your local extension data and synchronization.</p>
+    <section class="route-page" aria-labelledby="settings-title">
+      <h1 id="settings-title">Settings</h1>
+      <p>Manage local extension data stored in this browser.</p>
 
-      <div class="settings-layout">
-        <div class="settings-main">
-
-          <h2 class="section-title">Sync</h2>
-          <div class="action-grid">
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">SYNC</span>
-                <div class="action-card-icon action-card-icon-green">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Sync activities</h3>
-              <p class="action-card-desc">Import new Strava activities and their GPS routes.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-primary" type="button" (click)="syncNewActivities()">Sync activities</button>
-              </div>
-            </article>
-
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">SYNC</span>
-                <div class="action-card-icon action-card-icon-green">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Sync missing routes</h3>
-              <p class="action-card-desc">Retry route import for activities that have no GPS route yet.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-primary" type="button" (click)="syncMissingRoutes()">Sync missing routes</button>
-              </div>
-            </article>
-          </div>
-
-          <h2 class="section-title">Data Management</h2>
-          <div class="action-grid">
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">DATA</span>
-                <div class="action-card-icon action-card-icon-red">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Clear and re-sync</h3>
-              <p class="action-card-desc">Deletes locally synced tours and route data, then imports them again.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-danger" type="button" [disabled]="isClearingLocalData()" (click)="clearAndResync()">{{ isClearingLocalData() ? 'Clearing...' : 'Clear and re-sync' }}</button>
-              </div>
-            </article>
-
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">DATA</span>
-                <div class="action-card-icon action-card-icon-red">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Clear synced local data</h3>
-              <p class="action-card-desc">Removes imported activities, routes, and sync state from this browser.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-danger" type="button" [disabled]="isClearingLocalData()" (click)="clearSyncedLocalData()">{{ isClearingLocalData() ? 'Clearing...' : 'Clear synced local data' }}</button>
-                @if (clearLocalDataStatus()) {
-                  <p class="clear-status" role="status">{{ clearLocalDataStatus() }}</p>
-                }
-              </div>
-            </article>
-
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">DATA</span>
-                <div class="action-card-icon action-card-icon-green">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Backup local data</h3>
-              <p class="action-card-desc">Export your activities, routes, and settings to a JSON file.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-primary" type="button" (click)="backupLocalData()">Backup</button>
-              </div>
-            </article>
-
-            <article class="action-card">
-              <div class="action-card-top">
-                <span class="action-card-label">DATA</span>
-                <div class="action-card-icon action-card-icon-green">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-              </div>
-              <h3 class="action-card-title">Restore local data</h3>
-              <p class="action-card-desc">Restore activities, routes, and settings from a previous backup.</p>
-              <div class="action-card-bottom">
-                <button class="btn btn-primary" type="button" (click)="restoreLocalData()">Restore</button>
-              </div>
-            </article>
-          </div>
-
-          <div class="history-card">
-            <div class="history-header">
-              <h2 class="history-title">Sync History</h2>
-              @if (syncHistory().length > 0) {
-                <button class="btn btn-danger" type="button" (click)="clearSyncHistory()">Clear sync history</button>
+      <div class="settings-cards">
+        <article class="empty-state settings-card" aria-labelledby="komoot-auth-title">
+          <p class="empty-state-kicker">Komoot</p>
+          <h2 id="komoot-auth-title">Connect Komoot account</h2>
+          @if (komootAuth.authInvalid()) {
+            <p class="auth-error banner" role="alert">Your Komoot connection has expired. Please reconnect.</p>
+          }
+          @if (komootAuth.isVerifying()) {
+            <p class="auth-verifying">Verifying connection…</p>
+          }
+          @if (komootAuth.connectionState(); as state) {
+            <p class="auth-connected">Connected as <strong>{{ state.displayName }}</strong></p>
+            <button class="danger-action" type="button" (click)="disconnectKomoot()">Disconnect</button>
+          } @else if (!komootAuth.isVerifying()) {
+            <p>Enter your Komoot email and password to obtain an API token. Your password is never stored.</p>
+            <div class="auth-form">
+              <label class="auth-field">
+                <span class="auth-label">Email</span>
+                <input class="auth-input" type="email" [value]="komootEmail()" (input)="komootEmail.set($any($event.target).value)" placeholder="your@email.com" autocomplete="email" />
+              </label>
+              <label class="auth-field">
+                <span class="auth-label">Password</span>
+                <input class="auth-input" type="password" [value]="komootPassword()" (input)="komootPassword.set($any($event.target).value)" placeholder="Komoot password" autocomplete="current-password" />
+              </label>
+              @if (komootAuth.connectionError(); as error) {
+                <p class="auth-error" role="alert">{{ error }}</p>
               }
+              <button class="primary-action" type="button" [disabled]="!komootEmail() || !komootPassword() || komootAuth.isConnecting()" (click)="connectKomoot()">
+                {{ komootAuth.isConnecting() ? 'Connecting...' : 'Connect' }}
+              </button>
             </div>
-            @if (syncHistory().length === 0) {
-              <p class="no-history">No syncs have been performed yet.</p>
-            } @else {
-              <table class="sync-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Trigger</th>
-                    <th>Status</th>
-                    <th>Activities</th>
-                    <th>With routes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (entry of syncHistory(); track entry.id) {
-                    <tr>
-                      <td>{{ formatDate(entry.completedAt) }}</td>
-                      <td>{{ formatTrigger(entry.trigger) }}</td>
-                      <td>
-                        <span class="status-dot status-dot-green"></span>{{ entry.status }}
-                      </td>
-                      <td>{{ entry.totalActivitiesAfter }}</td>
-                      <td>{{ entry.activitiesWithRoutesAfter }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-              <button class="view-full-btn" type="button">View full history</button>
-            }
-          </div>
+          }
+        </article>
 
-        </div>
+        <article class="empty-state settings-card" aria-labelledby="sync-data-title">
+          <p class="empty-state-kicker">Sync</p>
+          <h2 id="sync-data-title">Sync tours</h2>
+          <p>Import new Komoot tours and their GPS routes.</p>
+          <button class="primary-action" type="button" [disabled]="!komootAuth.connectionState()" (click)="syncNewActivities()">Sync tours</button>
+        </article>
 
-        <aside class="settings-sidebar">
-          <div class="privacy-card">
-            <h2 class="privacy-title">Privacy &amp; Data</h2>
-            <p class="privacy-subtitle">Your data is stored locally in this browser.</p>
+        <article class="empty-state settings-card" aria-labelledby="sync-routes-title">
+          <p class="empty-state-kicker">Sync</p>
+          <h2 id="sync-routes-title">Sync missing routes</h2>
+          <p>Retry route import for activities that have no GPS route yet.</p>
+          <button class="primary-action" type="button" (click)="syncMissingRoutes()">Sync missing routes</button>
+        </article>
 
-            <div class="privacy-highlight">
-              <svg class="privacy-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <div>
-                <p class="privacy-highlight-title">Your data stays private</p>
-                <p class="privacy-highlight-text">All data is stored locally and never sent to our servers.</p>
-              </div>
-            </div>
+        <article class="empty-state danger-state settings-card" aria-labelledby="clear-resync-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="clear-resync-title">Clear and re-sync</h2>
+          <p>This deletes locally synced tours and route data, then imports them again from Komoot. Your settings will be kept.</p>
+          <button
+            class="danger-action"
+            type="button"
+            [disabled]="isClearingLocalData()"
+            (click)="clearAndResync()"
+          >
+            {{ isClearingLocalData() ? 'Clearing...' : 'Clear and re-sync' }}
+          </button>
+        </article>
 
-            <div class="privacy-row">
-              <svg class="privacy-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-              <p class="privacy-row-text">Imported tours and GPS routes are stored only in the browser's IndexedDB.</p>
-            </div>
+        <article class="empty-state danger-state settings-card" aria-labelledby="clear-local-data-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="clear-local-data-title">Clear synced local data</h2>
+          <p>
+            This removes imported activities, routes, and sync state from this browser. Settings and access state are kept.
+          </p>
+          <button
+            class="danger-action"
+            type="button"
+            [disabled]="isClearingLocalData()"
+            (click)="clearSyncedLocalData()"
+          >
+            {{ isClearingLocalData() ? 'Clearing...' : 'Clear synced local data' }}
+          </button>
 
-            <div class="privacy-row">
-              <svg class="privacy-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <p class="privacy-row-text">No route or tour data is uploaded to TrailRoam servers.</p>
-            </div>
+          @if (clearLocalDataStatus()) {
+            <p class="route-state" role="status">{{ clearLocalDataStatus() }}</p>
+          }
+        </article>
 
-            <div class="privacy-row">
-              <svg class="privacy-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <p class="privacy-row-text">Stored data can be inspected using browser developer tools.</p>
-            </div>
+        <article class="empty-state settings-card" aria-labelledby="backup-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="backup-title">Backup local data</h2>
+          <p>Export your activities, routes, and settings to a JSON file. The backup file may contain GPS route history — store it somewhere private.</p>
+          <button class="primary-action" type="button" (click)="backupLocalData()">Backup</button>
+        </article>
 
-            <div class="tip-box">
-              <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>
-              <div>
-                <p class="tip-title">Tip</p>
-                <p class="tip-text">Regularly back up your data to avoid accidental loss.</p>
-              </div>
-            </div>
-
-          </div>
-        </aside>
-
+        <article class="empty-state settings-card" aria-labelledby="restore-title">
+          <p class="empty-state-kicker">Local data</p>
+          <h2 id="restore-title">Restore local data</h2>
+          <p>Restore your activities, routes, and settings from a previous backup file. This will replace your current local data.</p>
+          <button class="primary-action" type="button" (click)="restoreLocalData()">Restore</button>
+        </article>
       </div>
-    </div>
+
+      <article class="empty-state" aria-labelledby="sync-history-title">
+        <div class="history-header">
+          <div>
+            <p class="empty-state-kicker">History</p>
+            <h2 id="sync-history-title">Sync history</h2>
+          </div>
+          @if (syncHistory().length > 0) {
+            <button class="danger-action history-clear-btn" type="button" (click)="clearSyncHistory()">Clear sync history</button>
+          }
+        </div>
+        @if (syncHistory().length === 0) {
+          <p>No syncs have been performed yet.</p>
+        } @else {
+          <div class="sync-history-scroll">
+            <table class="sync-history-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Trigger</th>
+                  <th>Status</th>
+                  <th>Activities</th>
+                  <th>With routes</th>
+                  <th>Without GPS</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of syncHistory(); track entry.id) {
+                  <tr>
+                    <td>{{ formatDate(entry.completedAt) }}</td>
+                    <td class="trigger-cell">{{ formatTrigger(entry.trigger) }}</td>
+                    <td>{{ entry.status }}</td>
+                    <td>{{ entry.totalActivitiesAfter }}</td>
+                    <td>{{ entry.activitiesWithRoutesAfter }}</td>
+                    <td>{{ entry.activitiesWithoutRoutesAfter }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </article>
+
+      <article class="empty-state" aria-labelledby="privacy-title">
+        <p class="empty-state-kicker">Privacy &amp; Data</p>
+        <h2 id="privacy-title">Where your data is stored</h2>
+        <ul class="privacy-list">
+          <li>Imported tours and GPS routes are stored only in this browser's IndexedDB using Dexie.js.</li>
+          <li>No route or tour data is ever uploaded to Trailroam servers.</li>
+          <li>Komoot login is required — enter your credentials in the Komoot auth section to obtain an API token.</li>
+          <li>You can inspect stored data by opening DevTools (F12) → Application → IndexedDB → trailroam_for_komoot.</li>
+        </ul>
+      </article>
+    </section>
   `,
 })
 export class SettingsPage {
@@ -263,13 +250,39 @@ export class SettingsPage {
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
   private readonly syncHistoryService = inject(SyncHistoryService);
+  protected readonly komootAuth = inject(KomootAuthService);
+  private readonly komootSync = inject(KomootSyncService);
 
   protected readonly isClearingLocalData = signal(false);
   protected readonly clearLocalDataStatus = signal<string | null>(null);
   protected readonly syncHistory = signal<import('./storage/storage.models').SyncHistoryRecord[]>([]);
+  protected readonly komootEmail = signal('');
+  protected readonly komootPassword = signal('');
 
   constructor() {
     this.loadSyncHistory();
+    this.komootAuth.loadAuthState();
+  }
+
+  protected async connectKomoot(): Promise<void> {
+    await this.komootAuth.connect(this.komootEmail(), this.komootPassword());
+    if (this.komootAuth.connectionState()) {
+      this.komootEmail.set('');
+      this.komootPassword.set('');
+      this.toastService.show('Connected to Komoot as ' + this.komootAuth.connectionState()!.displayName);
+    }
+  }
+
+  protected async disconnectKomoot(): Promise<void> {
+    const confirmed = await this.confirmService.confirm({
+      title: 'Disconnect Komoot',
+      message: 'This will remove your Komoot API token. You will need to reconnect to sync tours.',
+      confirmLabel: 'Disconnect',
+      danger: true,
+    });
+    if (!confirmed) return;
+    await this.komootAuth.disconnect();
+    this.toastService.show('Disconnected from Komoot.');
   }
 
   private async loadSyncHistory(): Promise<void> {
@@ -284,17 +297,11 @@ export class SettingsPage {
   }
 
   protected syncNewActivities(): void {
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-    }
+    this.komootSync.syncNewTours().then(() => this.loadSyncHistory());
   }
 
   protected syncMissingRoutes(): void {
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSyncMissing=true' });
-    }
+    // TODO: implement Komoot missing routes sync
   }
 
   protected async clearSyncHistory(): Promise<void> {
@@ -386,7 +393,7 @@ export class SettingsPage {
   protected async clearSyncedLocalData(): Promise<void> {
     const confirmed = await this.confirmService.confirm({
       title: 'Clear synced local data',
-      message: 'This will delete imported activities and routes from this browser. It will not delete anything from Strava.',
+      message: 'This will delete imported tours and routes from this browser. It will not delete anything from Komoot.',
       confirmLabel: 'Clear data',
       danger: true,
     });
@@ -419,7 +426,7 @@ export class SettingsPage {
   protected async clearAndResync(): Promise<void> {
     const confirmed = await this.confirmService.confirm({
       title: 'Clear and re-sync',
-      message: 'This will delete locally synced activities and route data, then import them again from Strava. Your settings will be kept.',
+      message: 'This will delete locally synced tours and route data, then import them again from Komoot. Your settings will be kept.',
       confirmLabel: 'Clear and re-sync',
       danger: true,
     });
@@ -442,11 +449,8 @@ export class SettingsPage {
         rateLimitedCount: 0,
         status: 'completed',
       });
-      this.clearLocalDataStatus.set('Local data cleared. Opening Strava to re-sync...');
-      const c = (globalThis as any).chrome;
-      if (c?.tabs?.create) {
-        c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-      }
+      this.clearLocalDataStatus.set('Local data cleared. Ready to re-sync from Komoot.');
+      // TODO: implement Komoot sync
     } finally {
       this.isClearingLocalData.set(false);
     }

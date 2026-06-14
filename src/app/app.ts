@@ -7,12 +7,9 @@ import { SyncSummaryService, type SyncSummary } from './storage/sync-summary.ser
 import { SyncHistoryService, type SyncTrigger } from './storage/sync-history.service';
 import { LocalDataService } from './storage/local-data.service';
 import { TRAILROAM_REPOSITORIES } from './storage/repositories/repositories.token';
-import { StravaActivityNormalizer } from './strava/strava-activity-normalizer';
-import { StravaSessionService } from './strava/strava-session.service';
-import { StravaRouteNormalizer } from './strava/strava-route-normalizer';
-import { SyncEngineService, type SyncNewResult } from './sync/sync-engine.service';
 import { DataRefreshService } from './shared/data-refresh.service';
-import type { StravaActivityResponse } from './strava/strava-session.service';
+import { KomootAuthService } from './komoot/komoot-auth.service';
+import { KomootSyncService } from './komoot/komoot-sync.service';
 
 @Component({
   selector: 'app-root',
@@ -24,18 +21,13 @@ export class App {
   private readonly syncSummaryService = inject(SyncSummaryService);
   private readonly localDataService = inject(LocalDataService);
   private readonly repositories = inject(TRAILROAM_REPOSITORIES);
-  private readonly activityNormalizer = inject(StravaActivityNormalizer);
-  private readonly stravaSessionService = inject(StravaSessionService);
-  private readonly routeNormalizer = inject(StravaRouteNormalizer);
-  private readonly syncEngine = inject(SyncEngineService);
+  protected readonly komootAuth = inject(KomootAuthService);
+  protected readonly komootSync = inject(KomootSyncService);
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
   private readonly dataRefresh = inject(DataRefreshService);
   private readonly syncHistoryService = inject(SyncHistoryService);
 
-  private pendingRouteCount = 0;
-  private totalRouteCount = 0;
-  private runningStoreCount = { activities: 0, routes: 0, noRoutes: 0 };
   private importHistoryRecorded = false;
 
   protected readonly syncSummary = signal<SyncSummary | null>(null);
@@ -48,6 +40,7 @@ export class App {
     this.loadSyncSummary();
     this.loadLastSyncLabel();
     this.listenForMessages();
+    this.komootAuth.loadAuthState();
     globalThis.addEventListener('click', () => this.closeSyncMenu());
   }
 
@@ -94,135 +87,15 @@ export class App {
         return true;
       }
       if (msg?.type === 'TRAILROAM_STORE_ACTIVITIES') {
-        console.log('[Trailroam] Store activities received, count:', msg.payload?.activities?.length ?? 0);
-        this.storeImportedData(msg.payload).then(() => {
-          console.log('[Trailroam] Store activities completed');
-          this.loadSyncSummary();
-          this.loadLastSyncLabel();
-          this.dataRefresh.emitRefresh();
-          this.toastService.show('Synced just now', 15000);
-          return undefined;
-        });
+        console.log('[Trailroam] Store activities received — TODO: handle in Komoot');
       }
       return undefined;
     });
   }
 
   private async storeImportedData(payload: any): Promise<void> {
-    const now = new Date().toISOString();
-    const rawActivities: StravaActivityResponse[] = payload?.activities ?? [];
-    const rawRoutes: Array<{ activityId: number; routeData: any }> = payload?.routes ?? [];
-
-    this.totalRouteCount += rawRoutes.length;
-
-    for (const raw of rawActivities) {
-      if (raw.distance !== undefined) {
-        raw.distance *= 1000;
-      }
-      if (typeof raw.moving_time === 'string') {
-        const parts = (raw.moving_time as string).split(':');
-        if (parts.length === 3) {
-          raw.moving_time = Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]) as any;
-        } else if (parts.length === 2) {
-          raw.moving_time = Number(parts[0]) * 60 + Number(parts[1]) as any;
-        }
-      }
-      if (typeof raw.elapsed_time === 'string') {
-        const parts = (raw.elapsed_time as string).split(':');
-        if (parts.length === 3) {
-          raw.elapsed_time = Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]) as any;
-        } else if (parts.length === 2) {
-          raw.elapsed_time = Number(parts[0]) * 60 + Number(parts[1]) as any;
-        }
-      }
-      const activity = this.activityNormalizer.normalize(raw);
-      activity.importedAt = now;
-      activity.updatedAt = now;
-      await this.repositories.activities.put(activity);
-      this.runningStoreCount.activities++;
-    }
-
-    for (const item of rawRoutes) {
-      const rawRoute = item.routeData;
-      const activityId = String(item.activityId);
-
-      if (rawRoute && rawRoute.latlng && Array.isArray(rawRoute.latlng.data) && rawRoute.latlng.data.length > 0) {
-        const validCoords: [number, number][] = [];
-        for (const coord of rawRoute.latlng.data) {
-          const lat = coord[0] as number;
-          const lng = coord[1] as number;
-          if (Number.isFinite(lng) && Number.isFinite(lat) && lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90) {
-            validCoords.push([lng, lat]);
-          }
-        }
-        if (validCoords.length >= 2) {
-          const elevations: number[] | undefined =
-            rawRoute.altitude && Array.isArray(rawRoute.altitude.data)
-              ? rawRoute.altitude.data
-              : undefined;
-          const cumulativeDistances: number[] | undefined =
-            rawRoute.distance && Array.isArray(rawRoute.distance.data)
-              ? rawRoute.distance.data
-              : undefined;
-          const route = {
-            activityId: 'strava:' + activityId,
-            providerActivityId: activityId,
-            coordinates: validCoords,
-            pointCount: validCoords.length,
-            elevations,
-            cumulativeDistances,
-            syncedAt: now,
-            updatedAt: now,
-          };
-          await this.repositories.activityRoutes.put(route);
-
-          const existing = await this.repositories.activities.get('strava:' + activityId);
-          if (existing) {
-            existing.hasRoute = true;
-            existing.routeSyncStatus = 'route_synced';
-            existing.updatedAt = now;
-            await this.repositories.activities.put(existing);
-          }
-          this.runningStoreCount.routes++;
-        } else {
-          this.runningStoreCount.noRoutes++;
-        }
-      } else {
-        this.runningStoreCount.noRoutes++;
-      }
-
-      this.pendingRouteCount++;
-    }
-
-    const allRoutesDone = this.totalRouteCount > 0 && this.pendingRouteCount >= this.totalRouteCount;
-
-    if (allRoutesDone || rawActivities.length > 0) {
-      const attempts = await this.retryMissingRoutes();
-      await this.repositories.syncState.put({
-        id: 'default',
-        status: 'completed',
-        completedAt: now,
-        lastSuccessfulSyncAt: now,
-        startedAt: now,
-        importedCount: this.runningStoreCount.activities,
-        updatedCount: 0,
-        routesSyncedCount: this.runningStoreCount.routes + attempts.synced,
-        skippedCount: this.runningStoreCount.noRoutes + attempts.skipped,
-        failedCount: attempts.failed,
-      });
-      if (!this.importHistoryRecorded && (allRoutesDone || (rawActivities.length > 0 && this.totalRouteCount === 0))) {
-        this.importHistoryRecorded = true;
-        await this.syncHistoryService.record('sync_new_activities', {
-          importedCount: this.runningStoreCount.activities,
-          updatedCount: 0,
-          routesSyncedCount: this.runningStoreCount.routes + attempts.synced,
-          skippedCount: this.runningStoreCount.noRoutes + attempts.skipped,
-          failedCount: attempts.failed,
-          rateLimitedCount: 0,
-          status: 'completed',
-        });
-      }
-    }
+    // TODO: implement Komoot data storage
+    console.log('[Trailroam] storeImportedData not yet implemented for Komoot');
   }
 
   private async sendSyncedIds(sendResponse: (response: any) => void): Promise<void> {
@@ -237,37 +110,6 @@ export class App {
       .filter((a) => a.routeSyncStatus !== 'route_synced')
       .map((a) => a.providerActivityId);
     sendResponse({ activityIds: needing });
-  }
-
-  private async retryMissingRoutes(): Promise<{ synced: number; skipped: number; failed: number }> {
-    const result = { synced: 0, skipped: 0, failed: 0 };
-    const activities = await this.repositories.activities.list();
-    const needing = activities.filter((a) => a.routeSyncStatus === 'not_attempted' || a.routeSyncStatus === 'route_failed');
-    if (needing.length === 0) return result;
-    const CONCURRENCY = 3;
-    for (let i = 0; i < needing.length; i += CONCURRENCY) {
-      const batch = needing.slice(i, i + CONCURRENCY);
-      await Promise.all(batch.map(async (a) => {
-        const fetchResult = await this.stravaSessionService.fetchActivityRoute(Number(a.providerActivityId));
-        if (fetchResult.success) {
-          const normalized = this.routeNormalizer.normalize(a.id, a.providerActivityId, fetchResult);
-          if (normalized.success) {
-            await this.repositories.activityRoutes.upsert(normalized.route);
-            await this.repositories.activities.updateRouteSyncStatus(a.id, true, 'route_synced');
-            result.synced++;
-          } else {
-            const status = normalized.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
-            await this.repositories.activities.updateRouteSyncStatus(a.id, false, status);
-            result.skipped++;
-          }
-        } else {
-          const status = fetchResult.errorCode === 'NO_GPS_ROUTE' ? 'no_route' as const : 'route_failed' as const;
-          await this.repositories.activities.updateRouteSyncStatus(a.id, false, status);
-          result.skipped++;
-        }
-      }));
-    }
-    return result;
   }
 
   protected toggleSyncMenu(): void {
@@ -287,7 +129,7 @@ export class App {
     await this.repositories.settings.put(settings);
   }
 
-  private async showSyncResult(result: SyncNewResult): Promise<void> {
+  private async showSyncResult(result: import('./storage/sync-summary.service').SyncNewResult): Promise<void> {
     await this.syncSummaryService.updateFromResult(result);
     const summary = await this.syncSummaryService.getSummary();
     this.syncSummary.set(summary);
@@ -295,26 +137,22 @@ export class App {
 
   protected syncNewActivities(): void {
     this.closeSyncMenu();
-    this.importHistoryRecorded = false;
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSync=true' });
-    }
+    this.komootSync.syncNewTours().then(() => {
+      this.loadSyncSummary();
+      this.loadLastSyncLabel();
+    });
   }
 
   protected syncMissingRoutes(): void {
     this.closeSyncMenu();
-    const c = (globalThis as any).chrome;
-    if (c?.tabs?.create) {
-      c.tabs.create({ url: 'https://www.strava.com/dashboard?trailroamSyncMissing=true' });
-    }
+    // TODO: implement Komoot missing routes sync
   }
 
   protected async clearAndResync(): Promise<void> {
     this.closeSyncMenu();
     const confirmed = await this.confirmService.confirm({
       title: 'Clear and re-sync',
-      message: 'This will delete locally synced activities and route data, then import them again from Strava. Your settings will be kept.',
+      message: 'This will delete locally synced tours and route data, then import them again from Komoot. Your settings will be kept.',
       confirmLabel: 'Clear and re-sync',
       danger: true,
     });
@@ -336,7 +174,7 @@ export class App {
     this.closeSyncMenu();
     const confirmed = await this.confirmService.confirm({
       title: 'Clear synced local data',
-      message: 'This will delete imported activities and routes from this browser. It will not delete anything from Strava.',
+      message: 'This will delete imported tours and routes from this browser. It will not delete anything from Komoot.',
       confirmLabel: 'Clear data',
       danger: true,
     });
