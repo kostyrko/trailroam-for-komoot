@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { KomootAuthService } from './komoot-auth.service';
-import { KomootSyncService } from './komoot-sync.service';
 import { ConfirmService } from '../shared/confirm.service';
 import { ToastService } from '../shared/toast.service';
 
 @Component({
   selector: 'app-komoot-auth-card',
+  host: { style: 'display: contents' },
   template: `
     <article class="action-card">
       <div class="action-card-top">
@@ -76,7 +76,6 @@ import { ToastService } from '../shared/toast.service';
 })
 export class KomootAuthCardComponent {
   protected readonly authService = inject(KomootAuthService);
-  private readonly syncService = inject(KomootSyncService);
   private readonly confirmService = inject(ConfirmService);
   private readonly toastService = inject(ToastService);
 
