@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "trailroam-for-strava": {
+    "trailroam-for-komoot": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
